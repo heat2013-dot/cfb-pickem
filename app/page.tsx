@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { PICKERS } from "@/lib/pickers";
-import { formatRank } from "@/lib/format";
+import { formatRank, formatSpread } from "@/lib/format";
 import PickButtons from "@/app/components/PickButtons";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
 import WeekSelector from "@/app/components/WeekSelector";
@@ -159,7 +159,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                             )}
                           </div>
                         </td>
-                        <td className="p-2">{game.spread != null ? game.spread : "–"}</td>
+                        <td className="p-2">
+                          {game.spread != null ? formatSpread(game.spread) : "–"}
+                        </td>
                         <td className="p-2">{game.overUnder != null ? game.overUnder : "–"}</td>
                         {PICKERS.map((picker) => {
                           const currentPick = game.picks.find((p) => p.picker === picker) ?? null;
