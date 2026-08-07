@@ -32,3 +32,19 @@ export async function setPick(
 
   revalidatePath("/");
 }
+
+export async function clearPick(gameId: number, picker: string) {
+  if (!(PICKERS as readonly string[]).includes(picker)) {
+    throw new Error("Invalid picker");
+  }
+
+  const game = await prisma.game.findUnique({ where: { id: gameId } });
+  if (!game) throw new Error("Game not found");
+  if (game.startDate.getTime() <= Date.now()) {
+    throw new Error("Picks are locked once a game starts");
+  }
+
+  await prisma.pick.deleteMany({ where: { gameId, picker } });
+
+  revalidatePath("/");
+}

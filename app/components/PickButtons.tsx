@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setPick } from "@/lib/actions";
+import { setPick, clearPick } from "@/lib/actions";
 import { formatSpread } from "@/lib/format";
 
 type CurrentPick = {
@@ -36,9 +36,14 @@ export default function PickButtons({
 
   function pick(betType: "spread" | "total", side: string) {
     setError(null);
+    const alreadySelected = currentPick?.betType === betType && currentPick?.side === side;
     startTransition(async () => {
       try {
-        await setPick(gameId, picker, betType, side);
+        if (alreadySelected) {
+          await clearPick(gameId, picker);
+        } else {
+          await setPick(gameId, picker, betType, side);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to save pick");
       }
