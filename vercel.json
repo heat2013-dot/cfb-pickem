@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/sync-week",
       "schedule": "0 13 * * 3"
+    },
+    {
+      "path": "/api/cron/grade",
+      "schedule": "0 13 * * *"
     }
   ]
 }
