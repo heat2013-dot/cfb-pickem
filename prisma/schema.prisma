@@ -51,6 +51,7 @@ model Game {
   spread       Float?
   overUnder    Float?
   oddsProvider String?
+  broadcast    String?
   status       String   @default("scheduled")
   homeScore    Int?
   awayScore    Int?

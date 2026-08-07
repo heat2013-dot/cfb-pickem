@@ -220,6 +220,63 @@ export async function getGamesForWeek(
   }));
 }
 
+interface RawGameMedia {
+  id: number;
+  outlet: string | null;
+}
+
+/** Returns each game's TV/streaming outlet (e.g. "ESPN", "ABC"), keyed by game id. */
+export async function getMediaForWeek(
+  year: number,
+  week: number,
+  seasonType: SeasonType
+): Promise<Map<number, string>> {
+  const raw = await cfbdFetch<RawGameMedia[]>("/games/media", { year, week, seasonType });
+  const byGame = new Map<number, string>();
+  for (const m of raw) {
+    if (m.outlet && !byGame.has(m.id)) byGame.set(m.id, m.outlet);
+  }
+  return byGame;
+}
+
+// CFBD doesn't provide broadcaster logos, so we look them up by domain via a
+// favicon service. Falls back to just showing the outlet name as text.
+const OUTLET_DOMAINS: Record<string, string> = {
+  ESPN: "espn.com",
+  ESPN2: "espn.com",
+  ESPNU: "espn.com",
+  ESPNEWS: "espn.com",
+  "ESPN+": "espn.com",
+  ABC: "abc.com",
+  FOX: "fox.com",
+  FS1: "foxsports.com",
+  FS2: "foxsports.com",
+  CBS: "cbs.com",
+  CBSSN: "cbssports.com",
+  NBC: "nbc.com",
+  Peacock: "peacock.com",
+  "The CW": "cwtv.com",
+  "SEC Network": "secsports.com",
+  "SEC Network+": "secsports.com",
+  "SECN+": "secsports.com",
+  "ACC Network": "theacc.com",
+  "ACCN": "theacc.com",
+  "ACCNX": "theacc.com",
+  "Big Ten Network": "btn.com",
+  "BTN": "btn.com",
+  "Big 12 Now": "big12sports.com",
+  "The Big Ten Network": "btn.com",
+  "Pac-12 Network": "pac-12.com",
+  "NFL Network": "nfl.com",
+  NFLN: "nfl.com",
+};
+
+export function networkLogoUrl(outlet: string | null | undefined): string | null {
+  if (!outlet) return null;
+  const domain = OUTLET_DOMAINS[outlet];
+  return domain ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : null;
+}
+
 export async function getLinesForWeek(
   year: number,
   week: number,

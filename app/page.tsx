@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { PICKERS } from "@/lib/pickers";
 import { formatRank, formatSpread } from "@/lib/format";
+import { networkLogoUrl } from "@/lib/cfbd";
 import PickButtons from "@/app/components/PickButtons";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
 import WeekSelector from "@/app/components/WeekSelector";
@@ -143,16 +144,33 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                               {game.homeTeam}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {game.startDate.toLocaleString("en-US", {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                            <span>
+                              {game.startDate.toLocaleString("en-US", {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                                timeZone: "America/New_York",
+                                timeZoneName: "short",
+                              })}
+                            </span>
+                            {game.broadcast && (
+                              <span className="flex items-center gap-1">
+                                {networkLogoUrl(game.broadcast) && (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={networkLogoUrl(game.broadcast)!}
+                                    alt=""
+                                    className="h-3.5 w-3.5 flex-shrink-0 object-contain"
+                                  />
+                                )}
+                                <span>{game.broadcast}</span>
+                              </span>
+                            )}
                             {game.status === "final" && (
-                              <span className="ml-2 font-semibold text-gray-700">
+                              <span className="font-semibold text-gray-700">
                                 Final: {game.awayTeam} {game.awayScore} – {game.homeTeam}{" "}
                                 {game.homeScore}
                               </span>

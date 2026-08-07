@@ -6,6 +6,7 @@ import {
   getLinesForWeek,
   getDisplayRankings,
   getRecords,
+  getMediaForWeek,
   pickBestLine,
   logoUrl,
   type SeasonType,
@@ -68,11 +69,12 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
 
   const rankByTeam = new Map(top25.ranks.map((r) => [r.school, r.rank]));
 
-  const [games, lines, displayPolls, records] = await Promise.all([
+  const [games, lines, displayPolls, records, media] = await Promise.all([
     getGamesForWeek(season, weekNumber, seasonType),
     getLinesForWeek(season, weekNumber, seasonType),
     getDisplayRankings(season, weekNumber, seasonType),
     getRecords(season),
+    getMediaForWeek(season, weekNumber, seasonType),
   ]);
 
   const linesByGameId = new Map(lines.map((l) => [l.id, l.lines]));
@@ -118,6 +120,7 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
           spread: bestLine?.spread ?? null,
           overUnder: bestLine?.overUnder ?? null,
           oddsProvider: bestLine?.provider ?? null,
+          broadcast: media.get(g.id) ?? null,
           status: g.completed ? "final" : "scheduled",
           homeScore: g.homeScore,
           awayScore: g.awayScore,
@@ -129,6 +132,7 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
           awayLogo: logoUrl(g.awayId),
           homeRank: rankByTeam.get(g.homeTeam) ?? null,
           awayRank: rankByTeam.get(g.awayTeam) ?? null,
+          broadcast: media.get(g.id) ?? null,
           // Don't clobber an existing line with a null if the odds feed hasn't posted yet.
           ...(bestLine
             ? { spread: bestLine.spread, overUnder: bestLine.overUnder, oddsProvider: bestLine.provider }
