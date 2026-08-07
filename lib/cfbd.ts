@@ -121,7 +121,8 @@ interface RankingsResponse {
 
 /**
  * Returns the Top 25 for a week, preferring CFP ("Playoff Committee Rankings")
- * once it exists, otherwise falling back to the AP Top 25.
+ * once it exists, then the AP Top 25, then the Coaches Poll (useful early in
+ * the season / preseason, when the Coaches Poll is often published first).
  */
 export async function getTop25(
   year: number,
@@ -140,6 +141,9 @@ export async function getTop25(
 
   const ap = polls.find((p) => p.poll === "AP Top 25");
   if (ap) return { pollSource: "AP Top 25", ranks: ap.ranks.slice(0, 25) };
+
+  const coaches = polls.find((p) => p.poll === "Coaches Poll");
+  if (coaches) return { pollSource: "Coaches Poll", ranks: coaches.ranks.slice(0, 25) };
 
   return null;
 }
