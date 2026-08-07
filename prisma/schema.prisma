@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Week {
+  id         Int      @id @default(autoincrement())
+  season     Int
+  weekNumber Int
+  seasonType String   @default("regular")
+  pollSource String
+  isCurrent  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  games      Game[]
+
+  @@unique([season, weekNumber, seasonType])
+}
+
+model Game {
+  id           Int      @id @default(autoincrement())
+  weekId       Int
+  week         Week     @relation(fields: [weekId], references: [id])
+  cfbdGameId   Int      @unique
+  startDate    DateTime
+  homeTeam     String
+  awayTeam     String
+  homeRank     Int?
+  awayRank     Int?
+  spread       Float?
+  overUnder    Float?
+  oddsProvider String?
+  status       String   @default("scheduled")
+  homeScore    Int?
+  awayScore    Int?
+  updatedAt    DateTime @updatedAt
+  picks        Pick[]
+}
+
+model Pick {
+  id        Int      @id @default(autoincrement())
+  gameId    Int
+  game      Game     @relation(fields: [gameId], references: [id])
+  picker    String
+  betType   String
+  side      String
+  isCorrect Boolean?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameId, picker])
+}
