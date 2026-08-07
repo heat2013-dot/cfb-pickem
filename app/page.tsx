@@ -170,6 +170,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                                 picker={picker}
                                 homeTeam={game.homeTeam}
                                 awayTeam={game.awayTeam}
+                                homeLogo={game.homeLogo}
+                                awayLogo={game.awayLogo}
                                 spread={game.spread}
                                 overUnder={game.overUnder}
                                 currentPick={currentPick}

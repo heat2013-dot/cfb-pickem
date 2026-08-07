@@ -15,6 +15,8 @@ export default function PickButtons({
   picker,
   homeTeam,
   awayTeam,
+  homeLogo,
+  awayLogo,
   spread,
   overUnder,
   currentPick,
@@ -25,6 +27,8 @@ export default function PickButtons({
   picker: string;
   homeTeam: string;
   awayTeam: string;
+  homeLogo: string | null;
+  awayLogo: string | null;
   spread: number | null;
   overUnder: number | null;
   currentPick: CurrentPick;
@@ -98,18 +102,32 @@ export default function PickButtons({
         <button
           type="button"
           disabled={pending || spread == null}
-          className={`${btnBase} ${selected("spread", "home")}`}
+          title={`${homeTeam} ${spread != null ? formatSpread(spread) : ""}`}
+          aria-label={`${homeTeam} ${spread != null ? formatSpread(spread) : ""}`}
+          className={`${btnBase} flex items-center justify-center ${selected("spread", "home")}`}
           onClick={() => pick("spread", "home")}
         >
-          {homeTeam} {spread != null ? formatSpread(spread) : "–"}
+          {homeLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={homeLogo} alt="" className="h-5 w-5 object-contain" />
+          ) : (
+            homeTeam
+          )}
         </button>
         <button
           type="button"
           disabled={pending || spread == null}
-          className={`${btnBase} ${selected("spread", "away")}`}
+          title={`${awayTeam} ${spread != null ? formatSpread(-spread) : ""}`}
+          aria-label={`${awayTeam} ${spread != null ? formatSpread(-spread) : ""}`}
+          className={`${btnBase} flex items-center justify-center ${selected("spread", "away")}`}
           onClick={() => pick("spread", "away")}
         >
-          {awayTeam} {spread != null ? formatSpread(-spread) : "–"}
+          {awayLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={awayLogo} alt="" className="h-5 w-5 object-contain" />
+          ) : (
+            awayTeam
+          )}
         </button>
         <button
           type="button"
