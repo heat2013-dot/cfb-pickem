@@ -28,6 +28,7 @@ model PollRanking {
   poll    String
   rank    Int
   team    String
+  logo    String?
   wins    Int
   losses  Int
   ties    Int    @default(0)
@@ -43,6 +44,8 @@ model Game {
   startDate    DateTime
   homeTeam     String
   awayTeam     String
+  homeLogo     String?
+  awayLogo     String?
   homeRank     Int?
   awayRank     Int?
   spread       Float?

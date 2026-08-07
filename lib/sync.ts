@@ -7,6 +7,7 @@ import {
   getDisplayRankings,
   getRecords,
   pickBestLine,
+  logoUrl,
   type SeasonType,
 } from "@/lib/cfbd";
 
@@ -66,6 +67,8 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
         startDate: new Date(g.startDate),
         homeTeam: g.homeTeam,
         awayTeam: g.awayTeam,
+        homeLogo: logoUrl(g.homeId),
+        awayLogo: logoUrl(g.awayId),
         homeRank: rankByTeam.get(g.homeTeam) ?? null,
         awayRank: rankByTeam.get(g.awayTeam) ?? null,
         spread: bestLine?.spread ?? null,
@@ -77,6 +80,8 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
       },
       update: {
         startDate: new Date(g.startDate),
+        homeLogo: logoUrl(g.homeId),
+        awayLogo: logoUrl(g.awayId),
         homeRank: rankByTeam.get(g.homeTeam) ?? null,
         awayRank: rankByTeam.get(g.awayTeam) ?? null,
         // Don't clobber an existing line with a null if the odds feed hasn't posted yet.
@@ -97,6 +102,7 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
         poll: table.poll,
         rank: r.rank,
         team: r.school,
+        logo: logoUrl(r.teamId),
         wins: rec?.wins ?? 0,
         losses: rec?.losses ?? 0,
         ties: rec?.ties ?? 0,

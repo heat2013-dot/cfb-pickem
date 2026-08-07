@@ -2,6 +2,7 @@ type RankingRow = {
   poll: string;
   rank: number;
   team: string;
+  logo: string | null;
   wins: number;
   losses: number;
   ties: number;
@@ -40,8 +41,12 @@ export default function PollTables({ rankings }: { rankings: RankingRow[] }) {
                   key={r.team}
                   className="flex items-baseline justify-between gap-2 border-b border-gray-100 py-1"
                 >
-                  <span className="flex min-w-0 gap-2">
+                  <span className="flex min-w-0 items-center gap-2">
                     <span className="w-5 flex-shrink-0 text-right text-gray-400">{r.rank}</span>
+                    {r.logo && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={r.logo} alt="" className="h-4 w-4 flex-shrink-0 object-contain" />
+                    )}
                     <span className="truncate font-medium">{r.team}</span>
                   </span>
                   <span className="flex-shrink-0 text-xs text-gray-500">

@@ -18,14 +18,17 @@ export interface CalendarWeek {
 export interface PollRank {
   rank: number;
   school: string;
+  teamId: number;
 }
 
 interface RawCfbdGame {
   id: number;
   startDate: string;
   completed: boolean;
+  homeId: number;
   homeTeam: string;
   homePoints: number | null;
+  awayId: number;
   awayTeam: string;
   awayPoints: number | null;
 }
@@ -34,10 +37,17 @@ export interface CfbdGame {
   id: number;
   startDate: string;
   completed: boolean;
+  homeId: number;
   homeTeam: string;
   homeScore: number | null;
+  awayId: number;
   awayTeam: string;
   awayScore: number | null;
+}
+
+/** CFBD serves team logos from a predictable CDN path keyed by team id. */
+export function logoUrl(teamId: number | null | undefined): string | null {
+  return teamId != null ? `https://cdn.collegefootballdata.com/logos/64/${teamId}.png` : null;
 }
 
 export interface CfbdLine {
@@ -201,8 +211,10 @@ export async function getGamesForWeek(
     id: g.id,
     startDate: g.startDate,
     completed: g.completed,
+    homeId: g.homeId,
     homeTeam: g.homeTeam,
     homeScore: g.homePoints,
+    awayId: g.awayId,
     awayTeam: g.awayTeam,
     awayScore: g.awayPoints,
   }));
