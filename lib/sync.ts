@@ -123,6 +123,7 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
           awayScore: g.awayScore,
         },
         update: {
+          weekId: week.id,
           startDate: new Date(g.startDate),
           homeLogo: logoUrl(g.homeId),
           awayLogo: logoUrl(g.awayId),
