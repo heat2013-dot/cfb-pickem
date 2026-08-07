@@ -77,7 +77,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       {!selectedWeek ? (
         <p className="text-gray-500">
-          No week has been synced yet. Hit the CFBD cron endpoint, or wait for Monday&apos;s
+          No week has been synced yet. Hit the CFBD cron endpoint, or wait for Wednesday&apos;s
           automatic sync once the season&apos;s poll is out.
         </p>
       ) : games.length === 0 ? (
