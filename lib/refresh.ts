@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { getGamesForWeek, getLinesForWeek, pickBestLine, type SeasonType } from "@/lib/cfbd";
+import {
+  getGamesForWeek,
+  getLinesForWeek,
+  getRecords,
+  pickBestLine,
+  type SeasonType,
+} from "@/lib/cfbd";
 import { gradePick } from "@/lib/grade";
 
 /**
@@ -26,6 +32,18 @@ export async function refreshOddsAndScores(now: Date = new Date()) {
 
   let oddsUpdated = 0;
   let gamesGraded = 0;
+
+  const records = await getRecords(week.season);
+  const rankings = await prisma.pollRanking.findMany({ where: { weekId: week.id } });
+  for (const pr of rankings) {
+    const rec = records.get(pr.team);
+    if (rec && (rec.wins !== pr.wins || rec.losses !== pr.losses || rec.ties !== pr.ties)) {
+      await prisma.pollRanking.update({
+        where: { id: pr.id },
+        data: { wins: rec.wins, losses: rec.losses, ties: rec.ties },
+      });
+    }
+  }
 
   for (const game of week.games) {
     // Only move the line while the game hasn't started yet, so a pick made

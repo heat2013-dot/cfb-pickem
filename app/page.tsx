@@ -4,6 +4,7 @@ import { formatRank } from "@/lib/format";
 import PickButtons from "@/app/components/PickButtons";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
 import WeekSelector from "@/app/components/WeekSelector";
+import PollTables from "@/app/components/PollTables";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +39,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       })
     : [];
 
+  const rankings = selectedWeek
+    ? await prisma.pollRanking.findMany({ where: { weekId: selectedWeek.id } })
+    : [];
+
   const now = Date.now();
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl px-4 py-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">CFB Top 25 Pick&apos;em</h1>
@@ -66,91 +71,101 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </div>
       </header>
 
-      <section className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-5">
-        {PICKERS.map((p) => (
-          <div key={p} className="rounded border border-gray-200 p-2 text-center">
-            <div className="text-xs uppercase text-gray-500">{p}</div>
-            <div className="text-lg font-semibold">{leaderboard[p] ?? 0}</div>
-          </div>
-        ))}
-      </section>
+      <div className="flex flex-col gap-8 lg:flex-row">
+        {rankings.length > 0 && (
+          <aside className="w-full flex-shrink-0 lg:w-64">
+            <PollTables rankings={rankings} />
+          </aside>
+        )}
 
-      {!selectedWeek ? (
-        <p className="text-gray-500">
-          No week has been synced yet. Hit the CFBD cron endpoint, or wait for Wednesday&apos;s
-          automatic sync once the season&apos;s poll is out.
-        </p>
-      ) : games.length === 0 ? (
-        <p className="text-gray-500">No Top 25 matchups found for this week.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-gray-300 text-left">
-                <th className="p-2">Matchup</th>
-                <th className="p-2">Spread</th>
-                <th className="p-2">O/U</th>
-                {PICKERS.map((p) => (
-                  <th key={p} className="p-2">
-                    {p}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {games.map((game) => {
-                const locked = game.startDate.getTime() <= now || game.status === "final";
-                return (
-                  <tr key={game.id} className="border-b border-gray-100 align-top">
-                    <td className="whitespace-nowrap p-2">
-                      <div className="font-medium">
-                        {formatRank(game.awayRank)}
-                        {game.awayTeam} @ {formatRank(game.homeRank)}
-                        {game.homeTeam}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {game.startDate.toLocaleString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                        {game.status === "final" && (
-                          <span className="ml-2 font-semibold text-gray-700">
-                            Final: {game.awayTeam} {game.awayScore} – {game.homeTeam}{" "}
-                            {game.homeScore}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-2">{game.spread != null ? game.spread : "–"}</td>
-                    <td className="p-2">{game.overUnder != null ? game.overUnder : "–"}</td>
-                    {PICKERS.map((picker) => {
-                      const currentPick = game.picks.find((p) => p.picker === picker) ?? null;
-                      return (
-                        <td key={picker} className="p-2">
-                          <PickButtons
-                            gameId={game.id}
-                            picker={picker}
-                            homeTeam={game.homeTeam}
-                            awayTeam={game.awayTeam}
-                            spread={game.spread}
-                            overUnder={game.overUnder}
-                            currentPick={currentPick}
-                            locked={locked}
-                            isFinal={game.status === "final"}
-                          />
-                        </td>
-                      );
-                    })}
+        <div className="min-w-0 flex-1">
+          <section className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {PICKERS.map((p) => (
+              <div key={p} className="rounded border border-gray-200 p-2 text-center">
+                <div className="text-xs uppercase text-gray-500">{p}</div>
+                <div className="text-lg font-semibold">{leaderboard[p] ?? 0}</div>
+              </div>
+            ))}
+          </section>
+
+          {!selectedWeek ? (
+            <p className="text-gray-500">
+              No week has been synced yet. Hit the CFBD cron endpoint, or wait for
+              Wednesday&apos;s automatic sync once the season&apos;s poll is out.
+            </p>
+          ) : games.length === 0 ? (
+            <p className="text-gray-500">No Top 25 matchups found for this week.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-300 text-left">
+                    <th className="p-2">Matchup</th>
+                    <th className="p-2">Spread</th>
+                    <th className="p-2">O/U</th>
+                    {PICKERS.map((p) => (
+                      <th key={p} className="p-2">
+                        {p}
+                      </th>
+                    ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {games.map((game) => {
+                    const locked = game.startDate.getTime() <= now || game.status === "final";
+                    return (
+                      <tr key={game.id} className="border-b border-gray-100 align-top">
+                        <td className="whitespace-nowrap p-2">
+                          <div className="font-medium">
+                            {formatRank(game.awayRank)}
+                            {game.awayTeam} @ {formatRank(game.homeRank)}
+                            {game.homeTeam}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {game.startDate.toLocaleString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                            {game.status === "final" && (
+                              <span className="ml-2 font-semibold text-gray-700">
+                                Final: {game.awayTeam} {game.awayScore} – {game.homeTeam}{" "}
+                                {game.homeScore}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-2">{game.spread != null ? game.spread : "–"}</td>
+                        <td className="p-2">{game.overUnder != null ? game.overUnder : "–"}</td>
+                        {PICKERS.map((picker) => {
+                          const currentPick = game.picks.find((p) => p.picker === picker) ?? null;
+                          return (
+                            <td key={picker} className="p-2">
+                              <PickButtons
+                                gameId={game.id}
+                                picker={picker}
+                                homeTeam={game.homeTeam}
+                                awayTeam={game.awayTeam}
+                                spread={game.spread}
+                                overUnder={game.overUnder}
+                                currentPick={currentPick}
+                                locked={locked}
+                                isFinal={game.status === "final"}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -16,8 +16,23 @@ model Week {
   isCurrent  Boolean  @default(false)
   createdAt  DateTime @default(now())
   games      Game[]
+  rankings   PollRanking[]
 
   @@unique([season, weekNumber, seasonType])
+}
+
+model PollRanking {
+  id      Int    @id @default(autoincrement())
+  weekId  Int
+  week    Week   @relation(fields: [weekId], references: [id])
+  poll    String
+  rank    Int
+  team    String
+  wins    Int
+  losses  Int
+  ties    Int    @default(0)
+
+  @@unique([weekId, poll, team])
 }
 
 model Game {

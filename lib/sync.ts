@@ -4,6 +4,8 @@ import {
   getTop25,
   getGamesForWeek,
   getLinesForWeek,
+  getDisplayRankings,
+  getRecords,
   pickBestLine,
   type SeasonType,
 } from "@/lib/cfbd";
@@ -32,9 +34,11 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
 
   const rankByTeam = new Map(top25.ranks.map((r) => [r.school, r.rank]));
 
-  const [games, lines] = await Promise.all([
+  const [games, lines, displayPolls, records] = await Promise.all([
     getGamesForWeek(season, weekNumber, seasonType),
     getLinesForWeek(season, weekNumber, seasonType),
+    getDisplayRankings(season, weekNumber, seasonType),
+    getRecords(season),
   ]);
 
   const linesByGameId = new Map(lines.map((l) => [l.id, l.lines]));
@@ -82,6 +86,25 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
       },
     });
     gamesUpserted++;
+  }
+
+  await prisma.pollRanking.deleteMany({ where: { weekId: week.id } });
+  const rankingRows = displayPolls.flatMap((table) =>
+    table.ranks.map((r) => {
+      const rec = records.get(r.school);
+      return {
+        weekId: week.id,
+        poll: table.poll,
+        rank: r.rank,
+        team: r.school,
+        wins: rec?.wins ?? 0,
+        losses: rec?.losses ?? 0,
+        ties: rec?.ties ?? 0,
+      };
+    })
+  );
+  if (rankingRows.length > 0) {
+    await prisma.pollRanking.createMany({ data: rankingRows });
   }
 
   return { synced: true, season, weekNumber, seasonType, pollSource: top25.pollSource, gamesUpserted };

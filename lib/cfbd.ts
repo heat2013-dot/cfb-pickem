@@ -144,6 +144,44 @@ export async function getTop25(
   return null;
 }
 
+const DISPLAY_POLLS = ["AP Top 25", "Coaches Poll", "Playoff Committee Rankings"];
+
+export interface PollTable {
+  poll: string;
+  ranks: PollRank[];
+}
+
+/** Returns each of the AP, Coaches, and CFP polls (whichever exist yet) for a week. */
+export async function getDisplayRankings(
+  year: number,
+  week: number,
+  seasonType: SeasonType
+): Promise<PollTable[]> {
+  const data = await cfbdFetch<RankingsResponse[]>("/rankings", { year, week, seasonType });
+  const polls = data[0]?.polls ?? [];
+
+  return DISPLAY_POLLS.map((name) => polls.find((p) => p.poll === name))
+    .filter((p): p is { poll: string; ranks: PollRank[] } => !!p)
+    .map((p) => ({ poll: p.poll, ranks: p.ranks.slice(0, 25) }));
+}
+
+export interface TeamRecord {
+  wins: number;
+  losses: number;
+  ties: number;
+}
+
+interface RawTeamRecord {
+  team: string;
+  total: { wins: number; losses: number; ties: number };
+}
+
+/** Returns each FBS/FCS team's current season record, keyed by team name. */
+export async function getRecords(year: number): Promise<Map<string, TeamRecord>> {
+  const raw = await cfbdFetch<RawTeamRecord[]>("/records", { year });
+  return new Map(raw.map((r) => [r.team, r.total]));
+}
+
 export async function getGamesForWeek(
   year: number,
   week: number,
