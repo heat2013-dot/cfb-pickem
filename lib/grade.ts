@@ -30,3 +30,30 @@ export function gradePick(params: {
 
   return null;
 }
+
+export type SpreadResult = "home" | "away" | "push" | null;
+export type TotalResult = "over" | "under" | "push" | null;
+
+/** The actual against-the-spread and over/under outcome for a finished game. */
+export function computeGameResult(params: {
+  homeScore: number | null;
+  awayScore: number | null;
+  spread: number | null;
+  overUnder: number | null;
+}): { spreadResult: SpreadResult; totalResult: TotalResult } {
+  const { homeScore, awayScore, spread, overUnder } = params;
+
+  let spreadResult: SpreadResult = null;
+  if (homeScore != null && awayScore != null && spread != null) {
+    const margin = homeScore - awayScore;
+    spreadResult = margin === -spread ? "push" : margin > -spread ? "home" : "away";
+  }
+
+  let totalResult: TotalResult = null;
+  if (homeScore != null && awayScore != null && overUnder != null) {
+    const total = homeScore + awayScore;
+    totalResult = total === overUnder ? "push" : total > overUnder ? "over" : "under";
+  }
+
+  return { spreadResult, totalResult };
+}

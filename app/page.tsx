@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PICKERS } from "@/lib/pickers";
 import { formatRank, formatSpread } from "@/lib/format";
 import { networkLogoUrl } from "@/lib/cfbd";
+import { computeGameResult } from "@/lib/grade";
 import PickButtons from "@/app/components/PickButtons";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
 import WeekSelector from "@/app/components/WeekSelector";
@@ -104,6 +105,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     <th className="p-2">Matchup</th>
                     <th className="p-2">Spread</th>
                     <th className="p-2">O/U</th>
+                    <th className="p-2">Results</th>
                     {PICKERS.map((p) => (
                       <th key={p} className="p-2">
                         {p}
@@ -114,6 +116,28 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 <tbody>
                   {games.map((game) => {
                     const locked = game.startDate.getTime() <= now || game.status === "final";
+                    const { spreadResult, totalResult } = computeGameResult({
+                      homeScore: game.homeScore,
+                      awayScore: game.awayScore,
+                      spread: game.spread,
+                      overUnder: game.overUnder,
+                    });
+                    const spreadResultLabel =
+                      spreadResult === "home"
+                        ? `${game.homeTeam} ${game.spread != null ? formatSpread(game.spread) : ""}`
+                        : spreadResult === "away"
+                          ? `${game.awayTeam} ${game.spread != null ? formatSpread(-game.spread) : ""}`
+                          : spreadResult === "push"
+                            ? "Push"
+                            : null;
+                    const totalResultLabel =
+                      totalResult === "over"
+                        ? `Over ${game.overUnder ?? ""}`
+                        : totalResult === "under"
+                          ? `Under ${game.overUnder ?? ""}`
+                          : totalResult === "push"
+                            ? "Push"
+                            : null;
                     return (
                       <tr key={game.id} className="border-b border-gray-100 align-top">
                         <td className="whitespace-nowrap p-2">
@@ -181,6 +205,24 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                           {game.spread != null ? formatSpread(game.spread) : "–"}
                         </td>
                         <td className="p-2">{game.overUnder != null ? game.overUnder : "–"}</td>
+                        <td className="p-2">
+                          {game.status === "final" ? (
+                            <div className="flex flex-col gap-1">
+                              {spreadResultLabel && (
+                                <span className="inline-block w-fit rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                                  {spreadResultLabel}
+                                </span>
+                              )}
+                              {totalResultLabel && (
+                                <span className="inline-block w-fit rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                                  {totalResultLabel}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">–</span>
+                          )}
+                        </td>
                         {PICKERS.map((picker) => {
                           const currentPick = game.picks.find((p) => p.picker === picker) ?? null;
                           return (
