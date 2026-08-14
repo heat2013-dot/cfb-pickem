@@ -95,6 +95,10 @@ export default function PickButtons({
     currentPick?.betType === betType && currentPick?.side === side
       ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
       : "bg-white text-gray-700 border-gray-300";
+  const arrowColor = (side: "over" | "under") => {
+    if (currentPick?.betType === "total" && currentPick?.side === side) return "text-white";
+    return side === "over" ? "text-green-600" : "text-red-600";
+  };
 
   return (
     <div className="flex flex-col gap-1">
@@ -134,20 +138,20 @@ export default function PickButtons({
           disabled={pending || overUnder == null}
           title={`Over ${overUnder ?? ""}`}
           aria-label={`Over ${overUnder ?? ""}`}
-          className={`${btnBase} ${selected("total", "over")}`}
+          className={`${btnBase} flex items-center justify-center ${selected("total", "over")}`}
           onClick={() => pick("total", "over")}
         >
-          ↑ {overUnder ?? "–"}
+          <span className={`text-xl leading-none font-bold ${arrowColor("over")}`}>↑</span>
         </button>
         <button
           type="button"
           disabled={pending || overUnder == null}
           title={`Under ${overUnder ?? ""}`}
           aria-label={`Under ${overUnder ?? ""}`}
-          className={`${btnBase} ${selected("total", "under")}`}
+          className={`${btnBase} flex items-center justify-center ${selected("total", "under")}`}
           onClick={() => pick("total", "under")}
         >
-          ↓ {overUnder ?? "–"}
+          <span className={`text-xl leading-none font-bold ${arrowColor("under")}`}>↓</span>
         </button>
       </div>
       {error && <span className="text-[10px] text-red-600">{error}</span>}
