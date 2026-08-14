@@ -64,8 +64,8 @@ export default function PickButtons({
           ? `${homeTeam} ${spread != null ? formatSpread(spread) : ""}`
           : `${awayTeam} ${spread != null ? formatSpread(-spread) : ""}`
         : currentPick.side === "over"
-          ? `O ${overUnder ?? ""}`
-          : `U ${overUnder ?? ""}`;
+          ? `↑ ${overUnder ?? ""}`
+          : `↓ ${overUnder ?? ""}`;
 
     let resultClass = "bg-gray-100 text-gray-600";
     let icon = "";
@@ -132,18 +132,22 @@ export default function PickButtons({
         <button
           type="button"
           disabled={pending || overUnder == null}
+          title={`Over ${overUnder ?? ""}`}
+          aria-label={`Over ${overUnder ?? ""}`}
           className={`${btnBase} ${selected("total", "over")}`}
           onClick={() => pick("total", "over")}
         >
-          O {overUnder ?? "–"}
+          ↑ {overUnder ?? "–"}
         </button>
         <button
           type="button"
           disabled={pending || overUnder == null}
+          title={`Under ${overUnder ?? ""}`}
+          aria-label={`Under ${overUnder ?? ""}`}
           className={`${btnBase} ${selected("total", "under")}`}
           onClick={() => pick("total", "under")}
         >
-          U {overUnder ?? "–"}
+          ↓ {overUnder ?? "–"}
         </button>
       </div>
       {error && <span className="text-[10px] text-red-600">{error}</span>}
