@@ -140,33 +140,37 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                             : null;
                     return (
                       <tr key={game.id} className="border-b border-gray-100 align-top">
-                        <td className="whitespace-nowrap p-2">
-                          <div className="flex items-center gap-1.5 font-medium">
-                            {game.awayLogo && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={game.awayLogo}
-                                alt=""
-                                className="h-5 w-5 flex-shrink-0 object-contain"
-                              />
-                            )}
-                            <span>
-                              {formatRank(game.awayRank)}
-                              {game.awayTeam}
-                            </span>
-                            <span className="text-gray-400">@</span>
-                            {game.homeLogo && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={game.homeLogo}
-                                alt=""
-                                className="h-5 w-5 flex-shrink-0 object-contain"
-                              />
-                            )}
-                            <span>
-                              {formatRank(game.homeRank)}
-                              {game.homeTeam}
-                            </span>
+                        <td className="p-2">
+                          <div className="flex items-start gap-2 font-medium">
+                            <div className="flex w-16 flex-col items-center gap-1 text-center">
+                              {game.awayLogo && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={game.awayLogo}
+                                  alt=""
+                                  className="h-10 w-10 flex-shrink-0 object-contain"
+                                />
+                              )}
+                              <span className="text-xs leading-tight">
+                                {formatRank(game.awayRank)}
+                                {game.awayTeam}
+                              </span>
+                            </div>
+                            <span className="mt-3 text-gray-400">@</span>
+                            <div className="flex w-16 flex-col items-center gap-1 text-center">
+                              {game.homeLogo && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={game.homeLogo}
+                                  alt=""
+                                  className="h-10 w-10 flex-shrink-0 object-contain"
+                                />
+                              )}
+                              <span className="text-xs leading-tight">
+                                {formatRank(game.homeRank)}
+                                {game.homeTeam}
+                              </span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-gray-500">
                             <span>
