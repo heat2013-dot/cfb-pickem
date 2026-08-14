@@ -102,21 +102,6 @@ export default function PickButtons({
         <button
           type="button"
           disabled={pending || spread == null}
-          title={`${homeTeam} ${spread != null ? formatSpread(spread) : ""}`}
-          aria-label={`${homeTeam} ${spread != null ? formatSpread(spread) : ""}`}
-          className={`${btnBase} flex items-center justify-center ${selected("spread", "home")}`}
-          onClick={() => pick("spread", "home")}
-        >
-          {homeLogo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={homeLogo} alt="" className="h-5 w-5 object-contain" />
-          ) : (
-            homeTeam
-          )}
-        </button>
-        <button
-          type="button"
-          disabled={pending || spread == null}
           title={`${awayTeam} ${spread != null ? formatSpread(-spread) : ""}`}
           aria-label={`${awayTeam} ${spread != null ? formatSpread(-spread) : ""}`}
           className={`${btnBase} flex items-center justify-center ${selected("spread", "away")}`}
@@ -127,6 +112,21 @@ export default function PickButtons({
             <img src={awayLogo} alt="" className="h-5 w-5 object-contain" />
           ) : (
             awayTeam
+          )}
+        </button>
+        <button
+          type="button"
+          disabled={pending || spread == null}
+          title={`${homeTeam} ${spread != null ? formatSpread(spread) : ""}`}
+          aria-label={`${homeTeam} ${spread != null ? formatSpread(spread) : ""}`}
+          className={`${btnBase} flex items-center justify-center ${selected("spread", "home")}`}
+          onClick={() => pick("spread", "home")}
+        >
+          {homeLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={homeLogo} alt="" className="h-5 w-5 object-contain" />
+          ) : (
+            homeTeam
           )}
         </button>
         <button
