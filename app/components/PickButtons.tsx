@@ -141,7 +141,11 @@ export default function PickButtons({
           className={`${btnBase} flex items-center justify-center ${selected("total", "over")}`}
           onClick={() => pick("total", "over")}
         >
-          <span className={`text-xl leading-none font-bold ${arrowColor("over")}`}>↑</span>
+          <span
+            className={`inline-block scale-x-150 text-xl leading-none font-bold ${arrowColor("over")}`}
+          >
+            ↑
+          </span>
         </button>
         <button
           type="button"
@@ -151,7 +155,11 @@ export default function PickButtons({
           className={`${btnBase} flex items-center justify-center ${selected("total", "under")}`}
           onClick={() => pick("total", "under")}
         >
-          <span className={`text-xl leading-none font-bold ${arrowColor("under")}`}>↓</span>
+          <span
+            className={`inline-block scale-x-150 text-xl leading-none font-bold ${arrowColor("under")}`}
+          >
+            ↓
+          </span>
         </button>
       </div>
       {error && <span className="text-[10px] text-red-600">{error}</span>}
