@@ -10,6 +10,24 @@ type CurrentPick = {
   isCorrect: boolean | null;
 } | null;
 
+function ArrowIcon({ direction, className }: { direction: "up" | "down"; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+      aria-hidden="true"
+      className={className}
+      style={direction === "down" ? { transform: "rotate(180deg)" } : undefined}
+    >
+      <path d="M12 2.5 21.5 12a2 2 0 0 1-1.4 3.4H16v5.6a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-5.6H3.9A2 2 0 0 1 2.5 12L12 2.5Z" />
+    </svg>
+  );
+}
+
 export default function PickButtons({
   gameId,
   picker,
@@ -141,11 +159,7 @@ export default function PickButtons({
           className={`${btnBase} flex items-center justify-center ${selected("total", "over")}`}
           onClick={() => pick("total", "over")}
         >
-          <span
-            className={`inline-block scale-x-150 text-xl leading-none font-bold ${arrowColor("over")}`}
-          >
-            ↑
-          </span>
+          <ArrowIcon direction="up" className={`h-5 w-5 ${arrowColor("over")}`} />
         </button>
         <button
           type="button"
@@ -155,11 +169,7 @@ export default function PickButtons({
           className={`${btnBase} flex items-center justify-center ${selected("total", "under")}`}
           onClick={() => pick("total", "under")}
         >
-          <span
-            className={`inline-block scale-x-150 text-xl leading-none font-bold ${arrowColor("under")}`}
-          >
-            ↓
-          </span>
+          <ArrowIcon direction="down" className={`h-5 w-5 ${arrowColor("under")}`} />
         </button>
       </div>
       {error && <span className="text-[10px] text-red-600">{error}</span>}
