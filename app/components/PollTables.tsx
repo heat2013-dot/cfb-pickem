@@ -86,7 +86,7 @@ export default function PollTables({ rankings }: { rankings: RankingRow[] }) {
               )}
               <span className="truncate font-medium">{r.team}</span>
             </span>
-            <span className="flex-shrink-0 text-xs text-gray-500">
+            <span className="w-12 flex-shrink-0 text-right text-xs text-gray-500">
               {r.wins}-{r.losses}
               {r.ties ? `-${r.ties}` : ""}
             </span>
