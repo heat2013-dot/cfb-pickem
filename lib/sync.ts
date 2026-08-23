@@ -11,6 +11,9 @@ import {
   logoUrl,
   type SeasonType,
   type CfbdGame,
+  type CfbdLine,
+  type PollTable,
+  type TeamRecord,
 } from "@/lib/cfbd";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -49,6 +52,87 @@ function splitByDateGap(games: CfbdGame[]): { early: CfbdGame[]; late: CfbdGame[
     return { early: sorted.slice(0, splitIndex), late: sorted.slice(splitIndex) };
   }
   return null;
+}
+
+/**
+ * Upserts the Top 25 matchups (with lines/broadcast) and the poll sidebar
+ * tables for one week. Shared by the full weekly sync and the manual
+ * per-week "Refresh Odds" button.
+ */
+async function upsertGamesAndPolls(
+  weekId: number,
+  games: CfbdGame[],
+  rankByTeam: Map<string, number>,
+  linesByGameId: Map<number, CfbdLine[]>,
+  media: Map<number, string>,
+  displayPolls: PollTable[],
+  records: Map<string, TeamRecord>
+): Promise<number> {
+  const top25Games = games.filter(
+    (g) => rankByTeam.has(g.homeTeam) || rankByTeam.has(g.awayTeam)
+  );
+
+  let gamesUpserted = 0;
+  for (const g of top25Games) {
+    const bestLine = pickBestLine(linesByGameId.get(g.id) ?? []);
+    await prisma.game.upsert({
+      where: { cfbdGameId: g.id },
+      create: {
+        weekId,
+        cfbdGameId: g.id,
+        startDate: new Date(g.startDate),
+        homeTeam: g.homeTeam,
+        awayTeam: g.awayTeam,
+        homeLogo: logoUrl(g.homeId),
+        awayLogo: logoUrl(g.awayId),
+        homeRank: rankByTeam.get(g.homeTeam) ?? null,
+        awayRank: rankByTeam.get(g.awayTeam) ?? null,
+        spread: bestLine?.spread ?? null,
+        overUnder: bestLine?.overUnder ?? null,
+        oddsProvider: bestLine?.provider ?? null,
+        broadcast: media.get(g.id) ?? null,
+        status: g.completed ? "final" : "scheduled",
+        homeScore: g.homeScore,
+        awayScore: g.awayScore,
+      },
+      update: {
+        weekId,
+        startDate: new Date(g.startDate),
+        homeLogo: logoUrl(g.homeId),
+        awayLogo: logoUrl(g.awayId),
+        homeRank: rankByTeam.get(g.homeTeam) ?? null,
+        awayRank: rankByTeam.get(g.awayTeam) ?? null,
+        broadcast: media.get(g.id) ?? null,
+        // Don't clobber an existing line with a null if the odds feed hasn't posted yet.
+        ...(bestLine
+          ? { spread: bestLine.spread, overUnder: bestLine.overUnder, oddsProvider: bestLine.provider }
+          : {}),
+      },
+    });
+    gamesUpserted++;
+  }
+
+  await prisma.pollRanking.deleteMany({ where: { weekId } });
+  const rankingRows = displayPolls.flatMap((table) =>
+    table.ranks.map((r) => {
+      const rec = records.get(r.school);
+      return {
+        weekId,
+        poll: table.poll,
+        rank: r.rank,
+        team: r.school,
+        logo: logoUrl(r.teamId),
+        wins: rec?.wins ?? 0,
+        losses: rec?.losses ?? 0,
+        ties: rec?.ties ?? 0,
+      };
+    })
+  );
+  if (rankingRows.length > 0) {
+    await prisma.pollRanking.createMany({ data: rankingRows });
+  }
+
+  return gamesUpserted;
 }
 
 /**
@@ -98,69 +182,15 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
       update: { pollSource: top25.pollSource },
     });
 
-    const top25Games = bucket.games.filter(
-      (g) => rankByTeam.has(g.homeTeam) || rankByTeam.has(g.awayTeam)
+    const gamesUpserted = await upsertGamesAndPolls(
+      week.id,
+      bucket.games,
+      rankByTeam,
+      linesByGameId,
+      media,
+      displayPolls,
+      records
     );
-
-    let gamesUpserted = 0;
-    for (const g of top25Games) {
-      const bestLine = pickBestLine(linesByGameId.get(g.id) ?? []);
-      await prisma.game.upsert({
-        where: { cfbdGameId: g.id },
-        create: {
-          weekId: week.id,
-          cfbdGameId: g.id,
-          startDate: new Date(g.startDate),
-          homeTeam: g.homeTeam,
-          awayTeam: g.awayTeam,
-          homeLogo: logoUrl(g.homeId),
-          awayLogo: logoUrl(g.awayId),
-          homeRank: rankByTeam.get(g.homeTeam) ?? null,
-          awayRank: rankByTeam.get(g.awayTeam) ?? null,
-          spread: bestLine?.spread ?? null,
-          overUnder: bestLine?.overUnder ?? null,
-          oddsProvider: bestLine?.provider ?? null,
-          broadcast: media.get(g.id) ?? null,
-          status: g.completed ? "final" : "scheduled",
-          homeScore: g.homeScore,
-          awayScore: g.awayScore,
-        },
-        update: {
-          weekId: week.id,
-          startDate: new Date(g.startDate),
-          homeLogo: logoUrl(g.homeId),
-          awayLogo: logoUrl(g.awayId),
-          homeRank: rankByTeam.get(g.homeTeam) ?? null,
-          awayRank: rankByTeam.get(g.awayTeam) ?? null,
-          broadcast: media.get(g.id) ?? null,
-          // Don't clobber an existing line with a null if the odds feed hasn't posted yet.
-          ...(bestLine
-            ? { spread: bestLine.spread, overUnder: bestLine.overUnder, oddsProvider: bestLine.provider }
-            : {}),
-        },
-      });
-      gamesUpserted++;
-    }
-
-    await prisma.pollRanking.deleteMany({ where: { weekId: week.id } });
-    const rankingRows = displayPolls.flatMap((table) =>
-      table.ranks.map((r) => {
-        const rec = records.get(r.school);
-        return {
-          weekId: week.id,
-          poll: table.poll,
-          rank: r.rank,
-          team: r.school,
-          logo: logoUrl(r.teamId),
-          wins: rec?.wins ?? 0,
-          losses: rec?.losses ?? 0,
-          ties: rec?.ties ?? 0,
-        };
-      })
-    );
-    if (rankingRows.length > 0) {
-      await prisma.pollRanking.createMany({ data: rankingRows });
-    }
 
     syncedWeeks.push({ weekNumber: bucket.weekNumber, gamesUpserted });
   }
@@ -190,4 +220,45 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
     weeks: syncedWeeks,
     gamesUpserted: syncedWeeks.reduce((sum, w) => sum + w.gamesUpserted, 0),
   };
+}
+
+/**
+ * Manual per-week refresh: re-pulls that week's matchups (in case a team's
+ * ranking changed which games count as Top 25), lines, broadcast info, and
+ * poll tables. Unlike syncWeek, this targets one already-existing week and
+ * never touches isCurrent or does the Week 0/1 split -- that's cron-only.
+ */
+export async function refreshWeek(weekId: number) {
+  const week = await prisma.week.findUnique({ where: { id: weekId } });
+  if (!week) {
+    return { refreshed: false, reason: "Week not found." };
+  }
+
+  const seasonType = week.seasonType as SeasonType;
+  const top25 = await getTop25(week.season, week.weekNumber, seasonType);
+  if (!top25) {
+    return { refreshed: false, reason: "No poll published yet for this week." };
+  }
+  const rankByTeam = new Map(top25.ranks.map((r) => [r.school, r.rank]));
+
+  const [games, lines, displayPolls, records, media] = await Promise.all([
+    getGamesForWeek(week.season, week.weekNumber, seasonType),
+    getLinesForWeek(week.season, week.weekNumber, seasonType),
+    getDisplayRankings(week.season, week.weekNumber, seasonType),
+    getRecords(week.season),
+    getMediaForWeek(week.season, week.weekNumber, seasonType),
+  ]);
+  const linesByGameId = new Map(lines.map((l) => [l.id, l.lines]));
+
+  const gamesUpserted = await upsertGamesAndPolls(
+    week.id,
+    games,
+    rankByTeam,
+    linesByGameId,
+    media,
+    displayPolls,
+    records
+  );
+
+  return { refreshed: true, gamesUpserted };
 }

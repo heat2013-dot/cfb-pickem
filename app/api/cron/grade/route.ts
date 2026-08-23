@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { refreshOddsAndScores } from "@/lib/refresh";
+import { prisma } from "@/lib/prisma";
+import { pullResults } from "@/lib/refresh";
 
 export const dynamic = "force-dynamic";
 
 // Runs daily so game results get graded without anyone needing to click
-// "Refresh Odds" -- same logic that button uses.
+// "Pull Results" -- same logic that button uses.
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (secret) {
@@ -16,7 +17,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await refreshOddsAndScores();
+    const week = await prisma.week.findFirst({ where: { isCurrent: true } });
+    if (!week) {
+      return NextResponse.json({ refreshed: false, reason: "No current week has been synced yet." });
+    }
+    const result = await pullResults(week.id);
     revalidatePath("/");
     return NextResponse.json(result);
   } catch (err) {

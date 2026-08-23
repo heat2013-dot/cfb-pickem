@@ -5,6 +5,8 @@ import { networkLogoUrl } from "@/lib/cfbd";
 import { computeGameResult } from "@/lib/grade";
 import PickButtons from "@/app/components/PickButtons";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
+import PullResultsButton from "@/app/components/PullResultsButton";
+import LockPicksButton from "@/app/components/LockPicksButton";
 import WeekSelector from "@/app/components/WeekSelector";
 import PollTables from "@/app/components/PollTables";
 
@@ -69,6 +71,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   }));
 
   const now = Date.now();
+  const picksLocked = selectedWeek?.picksLocked ?? false;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
@@ -92,7 +95,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               selectedId={selectedWeek.id}
             />
           )}
-          <RefreshOddsButton />
+          {selectedWeek && (
+            <>
+              <RefreshOddsButton weekId={selectedWeek.id} />
+              <PullResultsButton weekId={selectedWeek.id} />
+              <LockPicksButton weekId={selectedWeek.id} locked={selectedWeek.picksLocked} />
+            </>
+          )}
         </div>
       </header>
 
@@ -138,7 +147,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 </thead>
                 <tbody>
                   {games.map((game) => {
-                    const locked = game.startDate.getTime() <= now || game.status === "final";
+                    const locked =
+                      picksLocked || game.startDate.getTime() <= now || game.status === "final";
                     const { spreadResult, totalResult } = computeGameResult({
                       homeScore: game.homeScore,
                       awayScore: game.awayScore,
