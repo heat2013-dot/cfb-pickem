@@ -9,6 +9,7 @@ import PullResultsButton from "@/app/components/PullResultsButton";
 import LockPicksButton from "@/app/components/LockPicksButton";
 import WeekSelector from "@/app/components/WeekSelector";
 import PollTables from "@/app/components/PollTables";
+import PrintButton from "@/app/components/PrintButton";
 
 export const dynamic = "force-dynamic";
 
@@ -95,7 +96,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 print:hidden">
           {weeks.length > 0 && selectedWeek && (
             <WeekSelector
               weeks={weeks.map((w) => ({
@@ -112,12 +113,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <LockPicksButton weekId={selectedWeek.id} locked={selectedWeek.picksLocked} />
             </>
           )}
+          <PrintButton />
         </div>
       </header>
 
       <div className="flex flex-col gap-8 lg:flex-row">
         {rankings.length > 0 && (
-          <aside className="w-full flex-shrink-0 lg:w-64">
+          <aside className="w-full flex-shrink-0 print:hidden lg:w-64">
             <PollTables rankings={rankingsWithChange} />
           </aside>
         )}
