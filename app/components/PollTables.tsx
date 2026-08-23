@@ -76,9 +76,9 @@ export default function PollTables({ rankings }: { rankings: RankingRow[] }) {
         {rows.map((r) => (
           <li
             key={r.team}
-            className="flex items-baseline justify-between gap-2 border-b border-gray-100 py-1"
+            className="flex items-baseline gap-2 border-b border-gray-100 py-1"
           >
-            <span className="flex min-w-0 items-center gap-2">
+            <span className="flex min-w-0 flex-1 items-center gap-2">
               <span className="w-5 flex-shrink-0 text-right text-gray-400">{r.rank}</span>
               {r.logo && (
                 // eslint-disable-next-line @next/next/no-img-element
