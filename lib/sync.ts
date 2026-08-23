@@ -66,11 +66,14 @@ async function upsertGamesAndPolls(
   linesByGameId: Map<number, CfbdLine[]>,
   media: Map<number, string>,
   displayPolls: PollTable[],
-  records: Map<string, TeamRecord>
+  records: Map<string, TeamRecord>,
+  includeAllGames = false
 ): Promise<number> {
-  const top25Games = games.filter(
-    (g) => rankByTeam.has(g.homeTeam) || rankByTeam.has(g.awayTeam)
-  );
+  // Week 0's real slate is tiny (a handful of games league-wide), so it's
+  // shown in full rather than filtered down to just ranked matchups.
+  const top25Games = includeAllGames
+    ? games
+    : games.filter((g) => rankByTeam.has(g.homeTeam) || rankByTeam.has(g.awayTeam));
 
   let gamesUpserted = 0;
   for (const g of top25Games) {
@@ -189,7 +192,8 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
       linesByGameId,
       media,
       displayPolls,
-      records
+      records,
+      bucket.weekNumber === 0
     );
 
     syncedWeeks.push({ weekNumber: bucket.weekNumber, gamesUpserted });
@@ -271,7 +275,8 @@ export async function refreshWeek(weekId: number) {
     linesByGameId,
     media,
     displayPolls,
-    records
+    records,
+    week.weekNumber === 0
   );
 
   return { refreshed: true, gamesUpserted };
