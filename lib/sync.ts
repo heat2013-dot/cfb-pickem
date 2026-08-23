@@ -235,20 +235,34 @@ export async function refreshWeek(weekId: number) {
   }
 
   const seasonType = week.seasonType as SeasonType;
-  const top25 = await getTop25(week.season, week.weekNumber, seasonType);
+  // CFBD has no real "week 0": querying week 0 returns EVERY game in the
+  // whole season (not just the merged week 0/1 slate), while week 1
+  // reliably returns exactly that merged slate. Always query with 1 for
+  // this pair, then re-apply the same split syncWeek used.
+  const queryWeekNumber = week.weekNumber === 0 ? 1 : week.weekNumber;
+
+  const top25 = await getTop25(week.season, queryWeekNumber, seasonType);
   if (!top25) {
     return { refreshed: false, reason: "No poll published yet for this week." };
   }
   const rankByTeam = new Map(top25.ranks.map((r) => [r.school, r.rank]));
 
-  const [games, lines, displayPolls, records, media] = await Promise.all([
-    getGamesForWeek(week.season, week.weekNumber, seasonType),
-    getLinesForWeek(week.season, week.weekNumber, seasonType),
-    getDisplayRankings(week.season, week.weekNumber, seasonType),
+  const [rawGames, lines, displayPolls, records, media] = await Promise.all([
+    getGamesForWeek(week.season, queryWeekNumber, seasonType),
+    getLinesForWeek(week.season, queryWeekNumber, seasonType),
+    getDisplayRankings(week.season, queryWeekNumber, seasonType),
     getRecords(week.season),
-    getMediaForWeek(week.season, week.weekNumber, seasonType),
+    getMediaForWeek(week.season, queryWeekNumber, seasonType),
   ]);
   const linesByGameId = new Map(lines.map((l) => [l.id, l.lines]));
+
+  let games = rawGames;
+  if (week.weekNumber === 0 || week.weekNumber === 1) {
+    const split = splitByDateGap(rawGames);
+    if (split) {
+      games = week.weekNumber === 0 ? split.early : split.late;
+    }
+  }
 
   const gamesUpserted = await upsertGamesAndPolls(
     week.id,
