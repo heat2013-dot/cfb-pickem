@@ -45,6 +45,29 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     ? await prisma.pollRanking.findMany({ where: { weekId: selectedWeek.id } })
     : [];
 
+  const previousWeek = selectedWeek
+    ? await prisma.week.findFirst({
+        where: {
+          season: selectedWeek.season,
+          seasonType: selectedWeek.seasonType,
+          weekNumber: { lt: selectedWeek.weekNumber },
+        },
+        orderBy: { weekNumber: "desc" },
+      })
+    : null;
+
+  const previousRankings = previousWeek
+    ? await prisma.pollRanking.findMany({ where: { weekId: previousWeek.id } })
+    : [];
+  const previousRankByKey = new Map(
+    previousRankings.map((r) => [`${r.poll}|${r.team}`, r.rank])
+  );
+
+  const rankingsWithChange = rankings.map((r) => ({
+    ...r,
+    previousRank: previousRankByKey.get(`${r.poll}|${r.team}`) ?? null,
+  }));
+
   const now = Date.now();
 
   return (
@@ -76,7 +99,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <div className="flex flex-col gap-8 lg:flex-row">
         {rankings.length > 0 && (
           <aside className="w-full flex-shrink-0 lg:w-64">
-            <PollTables rankings={rankings} />
+            <PollTables rankings={rankingsWithChange} />
           </aside>
         )}
 

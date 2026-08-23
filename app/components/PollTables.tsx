@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ArrowIcon from "@/app/components/ArrowIcon";
 
 type RankingRow = {
   poll: string;
@@ -10,6 +11,7 @@ type RankingRow = {
   wins: number;
   losses: number;
   ties: number;
+  previousRank: number | null;
 };
 
 const POLL_ORDER = ["AP Top 25", "Playoff Committee Rankings", "Coaches Poll"];
@@ -18,6 +20,29 @@ const POLL_LABELS: Record<string, string> = {
   "Playoff Committee Rankings": "CFP Poll",
   "Coaches Poll": "Coaches Poll",
 };
+
+function RankChange({ rank, previousRank }: { rank: number; previousRank: number | null }) {
+  if (previousRank == null) {
+    return <span className="text-[10px] text-gray-400">NR</span>;
+  }
+  const change = previousRank - rank;
+  if (change === 0) {
+    return <span className="text-[10px] text-gray-400">–</span>;
+  }
+  if (change > 0) {
+    return (
+      <span className="flex items-center gap-0.5 text-xs font-medium text-green-600">
+        <ArrowIcon direction="up" className="h-3 w-3" />+{change}
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-0.5 text-xs font-medium text-red-600">
+      <ArrowIcon direction="down" className="h-3 w-3" />
+      {change}
+    </span>
+  );
+}
 
 export default function PollTables({ rankings }: { rankings: RankingRow[] }) {
   const byPoll = new Map<string, RankingRow[]>();
@@ -64,6 +89,9 @@ export default function PollTables({ rankings }: { rankings: RankingRow[] }) {
             <span className="flex-shrink-0 text-xs text-gray-500">
               {r.wins}-{r.losses}
               {r.ties ? `-${r.ties}` : ""}
+            </span>
+            <span className="w-9 flex-shrink-0 text-right">
+              <RankChange rank={r.rank} previousRank={r.previousRank} />
             </span>
           </li>
         ))}
