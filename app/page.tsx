@@ -73,6 +73,16 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const now = Date.now();
   const picksLocked = selectedWeek?.picksLocked ?? false;
 
+  const weeklyLeaderboard = Object.fromEntries(PICKERS.map((p) => [p, 0])) as Record<
+    string,
+    number
+  >;
+  for (const game of games) {
+    for (const pick of game.picks) {
+      if (pick.isCorrect) weeklyLeaderboard[pick.picker] = (weeklyLeaderboard[pick.picker] ?? 0) + 1;
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -113,13 +123,35 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         )}
 
         <div className="min-w-0 flex-1">
-          <section className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {PICKERS.map((p) => (
-              <div key={p} className="rounded border border-gray-200 p-2 text-center">
-                <div className="text-xs uppercase text-gray-500">{p}</div>
-                <div className="text-lg font-semibold">{leaderboard[p] ?? 0}</div>
+          <section className="mb-8 flex flex-col gap-3">
+            <div>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Season
               </div>
-            ))}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                {PICKERS.map((p) => (
+                  <div key={p} className="rounded border border-gray-200 p-2 text-center">
+                    <div className="text-xs uppercase text-gray-500">{p}</div>
+                    <div className="text-lg font-semibold">{leaderboard[p] ?? 0}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {selectedWeek && (
+              <div>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Week {selectedWeek.weekNumber}
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {PICKERS.map((p) => (
+                    <div key={p} className="rounded border border-gray-200 p-2 text-center">
+                      <div className="text-xs uppercase text-gray-500">{p}</div>
+                      <div className="text-lg font-semibold">{weeklyLeaderboard[p] ?? 0}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
           {!selectedWeek ? (
