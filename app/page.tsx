@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PICKERS } from "@/lib/pickers";
 import { formatRank, formatSpread } from "@/lib/format";
@@ -84,6 +85,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     }
   }
 
+  const seasonBest = Math.max(0, ...PICKERS.map((p) => leaderboard[p] ?? 0));
+  const weekBest = Math.max(0, ...PICKERS.map((p) => weeklyLeaderboard[p] ?? 0));
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -114,6 +118,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </>
           )}
           <PrintButton />
+          <Link
+            href="/standings"
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Standings
+          </Link>
         </div>
       </header>
 
@@ -131,12 +141,26 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 Season
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                {PICKERS.map((p) => (
-                  <div key={p} className="rounded border border-gray-200 p-2 text-center">
-                    <div className="text-xs uppercase text-gray-500">{p}</div>
-                    <div className="text-lg font-semibold">{leaderboard[p] ?? 0}</div>
-                  </div>
-                ))}
+                {PICKERS.map((p) => {
+                  const isLeader = seasonBest > 0 && (leaderboard[p] ?? 0) === seasonBest;
+                  return (
+                    <div
+                      key={p}
+                      className={`rounded border p-2 text-center ${
+                        isLeader
+                          ? "border-amber-300 bg-amber-50"
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <div className="text-xs uppercase text-gray-500">{p}</div>
+                      <div
+                        className={`text-lg font-semibold ${isLeader ? "text-amber-700" : ""}`}
+                      >
+                        {leaderboard[p] ?? 0}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             {selectedWeek && (
@@ -145,12 +169,26 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   Week {selectedWeek.weekNumber}
                 </div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                  {PICKERS.map((p) => (
-                    <div key={p} className="rounded border border-gray-200 p-2 text-center">
-                      <div className="text-xs uppercase text-gray-500">{p}</div>
-                      <div className="text-lg font-semibold">{weeklyLeaderboard[p] ?? 0}</div>
-                    </div>
-                  ))}
+                  {PICKERS.map((p) => {
+                    const isLeader = weekBest > 0 && (weeklyLeaderboard[p] ?? 0) === weekBest;
+                    return (
+                      <div
+                        key={p}
+                        className={`rounded border p-2 text-center ${
+                          isLeader
+                            ? "border-amber-300 bg-amber-50"
+                            : "border-gray-200"
+                        }`}
+                      >
+                        <div className="text-xs uppercase text-gray-500">{p}</div>
+                        <div
+                          className={`text-lg font-semibold ${isLeader ? "text-amber-700" : ""}`}
+                        >
+                          {weeklyLeaderboard[p] ?? 0}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
