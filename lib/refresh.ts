@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getGamesForWeek, type SeasonType } from "@/lib/cfbd";
 import { gradePick } from "@/lib/grade";
+import { resolveCfbdQueryWeek, gamesForWeek } from "@/lib/sync";
 
 /**
  * Pulls the latest scores for one week's games, marks any that have gone
@@ -17,7 +18,9 @@ export async function pullResults(weekId: number) {
   }
 
   const seasonType = week.seasonType as SeasonType;
-  const cfbdGames = await getGamesForWeek(week.season, week.weekNumber, seasonType);
+  const queryWeekNumber = resolveCfbdQueryWeek(week.weekNumber);
+  const rawGames = await getGamesForWeek(week.season, queryWeekNumber, seasonType);
+  const cfbdGames = gamesForWeek(week.weekNumber, seasonType, rawGames);
   const cfbdById = new Map(cfbdGames.map((g) => [g.id, g]));
 
   let gamesGraded = 0;

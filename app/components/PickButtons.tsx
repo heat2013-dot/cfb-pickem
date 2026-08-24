@@ -59,14 +59,6 @@ export default function PickButtons({
     if (!currentPick) {
       return <span className="text-xs text-gray-400">no pick</span>;
     }
-    const label =
-      currentPick.betType === "spread"
-        ? currentPick.side === "home"
-          ? `${homeTeam} ${spread != null ? formatSpread(spread) : ""}`
-          : `${awayTeam} ${spread != null ? formatSpread(-spread) : ""}`
-        : currentPick.side === "over"
-          ? `↑ ${overUnder ?? ""}`
-          : `↓ ${overUnder ?? ""}`;
 
     let resultClass = "bg-gray-100 text-gray-600";
     let icon = "";
@@ -82,6 +74,23 @@ export default function PickButtons({
         icon = "push ";
       }
     }
+
+    if (currentPick.betType === "total") {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${resultClass}`}
+        >
+          {icon}
+          <ArrowIcon direction={currentPick.side === "over" ? "up" : "down"} className="h-3 w-3" />
+          {overUnder ?? ""}
+        </span>
+      );
+    }
+
+    const label =
+      currentPick.side === "home"
+        ? `${homeTeam} ${spread != null ? formatSpread(spread) : ""}`
+        : `${awayTeam} ${spread != null ? formatSpread(-spread) : ""}`;
     return (
       <span className={`inline-block rounded px-2 py-1 text-xs font-medium ${resultClass}`}>
         {icon}

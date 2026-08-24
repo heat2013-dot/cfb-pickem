@@ -114,8 +114,9 @@ export async function getCurrentWeek(
     }
   }
 
-  if (regularWeeks.length && now < new Date(regularWeeks[0].startDate)) {
-    return { week: regularWeeks[0].week, seasonType: "regular" };
+  const firstRegularWeek = allSorted.find((w) => w.seasonType === "regular");
+  if (firstRegularWeek && now < new Date(firstRegularWeek.startDate)) {
+    return { week: firstRegularWeek.week, seasonType: "regular" };
   }
 
   const last = allSorted[allSorted.length - 1];

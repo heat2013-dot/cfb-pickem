@@ -55,6 +55,55 @@ function splitByDateGap(games: CfbdGame[]): { early: CfbdGame[]; late: CfbdGame[
 }
 
 /**
+ * CFBD has no real "week 0": querying most endpoints (games, lines, media)
+ * with week=0 returns the ENTIRE SEASON instead of just that week's slate,
+ * while week 1 reliably returns the correct (possibly merged) slate for
+ * both. This is the one safe place that knows that -- every caller that
+ * needs to query CFBD for a Week 0 record must route through here rather
+ * than passing weekNumber straight through.
+ */
+export function resolveCfbdQueryWeek(weekNumber: number): number {
+  return weekNumber === 0 ? 1 : weekNumber;
+}
+
+/**
+ * Splits one CFBD query week's raw games into the real week(s) they belong
+ * to. Only week 1 (regular season) can be a merged Week 0 + Week 1 slate;
+ * every other query week is returned as a single bucket.
+ */
+function bucketsForQueryWeek(
+  queryWeekNumber: number,
+  seasonType: SeasonType,
+  games: CfbdGame[]
+): { weekNumber: number; games: CfbdGame[] }[] {
+  if (queryWeekNumber !== 1 || seasonType !== "regular") {
+    return [{ weekNumber: queryWeekNumber, games }];
+  }
+  const split = splitByDateGap(games);
+  if (!split) return [{ weekNumber: queryWeekNumber, games }];
+  return [
+    { weekNumber: 0, games: split.early },
+    { weekNumber: 1, games: split.late },
+  ];
+}
+
+/**
+ * Filters a raw CFBD games list (fetched via resolveCfbdQueryWeek's result)
+ * down to just the games belonging to one specific already-existing week
+ * record. Shared by refreshWeek() and pullResults() so neither has to
+ * reimplement the Week 0/1 split on its own.
+ */
+export function gamesForWeek(
+  weekNumber: number,
+  seasonType: SeasonType,
+  rawGames: CfbdGame[]
+): CfbdGame[] {
+  const queryWeekNumber = resolveCfbdQueryWeek(weekNumber);
+  const buckets = bucketsForQueryWeek(queryWeekNumber, seasonType, rawGames);
+  return buckets.find((b) => b.weekNumber === weekNumber)?.games ?? rawGames;
+}
+
+/**
  * Upserts the Top 25 matchups (with lines/broadcast) and the poll sidebar
  * tables for one week. Shared by the full weekly sync and the manual
  * per-week "Refresh Odds" button.
@@ -173,13 +222,7 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
 
   const linesByGameId = new Map(lines.map((l) => [l.id, l.lines]));
 
-  const split = weekNumber === 1 && seasonType === "regular" ? splitByDateGap(games) : null;
-  const buckets: { weekNumber: number; games: CfbdGame[] }[] = split
-    ? [
-        { weekNumber: 0, games: split.early },
-        { weekNumber: 1, games: split.late },
-      ]
-    : [{ weekNumber, games }];
+  const buckets = bucketsForQueryWeek(weekNumber, seasonType, games);
 
   await prisma.week.updateMany({ data: { isCurrent: false }, where: { isCurrent: true } });
 
@@ -246,11 +289,7 @@ export async function refreshWeek(weekId: number) {
   }
 
   const seasonType = week.seasonType as SeasonType;
-  // CFBD has no real "week 0": querying week 0 returns EVERY game in the
-  // whole season (not just the merged week 0/1 slate), while week 1
-  // reliably returns exactly that merged slate. Always query with 1 for
-  // this pair, then re-apply the same split syncWeek used.
-  const queryWeekNumber = week.weekNumber === 0 ? 1 : week.weekNumber;
+  const queryWeekNumber = resolveCfbdQueryWeek(week.weekNumber);
 
   const top25 = await getTop25(week.season, queryWeekNumber, seasonType);
   if (!top25) {
@@ -267,13 +306,7 @@ export async function refreshWeek(weekId: number) {
   ]);
   const linesByGameId = new Map(lines.map((l) => [l.id, l.lines]));
 
-  let games = rawGames;
-  if (week.weekNumber === 0 || week.weekNumber === 1) {
-    const split = splitByDateGap(rawGames);
-    if (split) {
-      games = week.weekNumber === 0 ? split.early : split.late;
-    }
-  }
+  const games = gamesForWeek(week.weekNumber, seasonType, rawGames);
 
   const gamesUpserted = await upsertGamesAndPolls(
     week.id,
