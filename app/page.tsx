@@ -268,7 +268,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                                 src={networkLogoUrl(game.broadcast)!}
                                 alt={game.broadcast}
                                 title={game.broadcast}
-                                className="h-10 w-10 object-contain"
+                                className="h-6 w-6 object-contain"
                               />
                             ) : (
                               <span className="text-xs text-gray-500">{game.broadcast}</span>
