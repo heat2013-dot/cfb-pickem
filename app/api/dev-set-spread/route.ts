@@ -22,9 +22,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const weekId = Number(request.nextUrl.searchParams.get("weekId"));
+  const week = await prisma.week.findUnique({ where: { id: weekId } });
   const games = await prisma.game.findMany({
     where: { weekId },
     select: { id: true, homeTeam: true, awayTeam: true, spread: true, startDate: true },
   });
-  return NextResponse.json(games);
+  return NextResponse.json({ week, games });
 }
