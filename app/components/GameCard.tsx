@@ -27,7 +27,7 @@ export default function GameCard({ game, locked }: { game: GameWithPicks; locked
   const broadcastLogo = game.broadcast ? networkLogoUrl(game.broadcast) : null;
 
   return (
-    <div className="rounded-lg border border-gray-200 p-3">
+    <div className="break-inside-avoid rounded-lg border border-gray-200 p-3">
       <div className="flex items-center justify-center gap-3">
         <div className="flex flex-col items-center gap-1 text-center">
           {game.awayLogo && (

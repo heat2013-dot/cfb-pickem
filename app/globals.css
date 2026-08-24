@@ -30,4 +30,11 @@ body {
     size: landscape;
     margin: 0.5in;
   }
+
+  /* Keep each game's whole row/card together on one page instead of
+     splitting it across a page break. */
+  table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }
