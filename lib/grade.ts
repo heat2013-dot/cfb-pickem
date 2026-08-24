@@ -1,3 +1,5 @@
+import { formatSpread } from "@/lib/format";
+
 /**
  * Grades a single pick against a final score. Returns null for a push
  * (result landed exactly on the line) — pushes award no points to anyone.
@@ -56,4 +58,41 @@ export function computeGameResult(params: {
   }
 
   return { spreadResult, totalResult };
+}
+
+/** Human-readable "who covered" / "over or under" labels for a finished game. */
+export function formatResultLabels(game: {
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  spread: number | null;
+  overUnder: number | null;
+  status: string;
+}): { spreadResultLabel: string | null; totalResultLabel: string | null } {
+  if (game.status !== "final") {
+    return { spreadResultLabel: null, totalResultLabel: null };
+  }
+
+  const { spreadResult, totalResult } = computeGameResult(game);
+
+  const spreadResultLabel =
+    spreadResult === "home"
+      ? `${game.homeTeam} ${game.spread != null ? formatSpread(game.spread) : ""}`
+      : spreadResult === "away"
+        ? `${game.awayTeam} ${game.spread != null ? formatSpread(-game.spread) : ""}`
+        : spreadResult === "push"
+          ? "Push"
+          : null;
+
+  const totalResultLabel =
+    totalResult === "over"
+      ? `Over ${game.overUnder ?? ""}`
+      : totalResult === "under"
+        ? `Under ${game.overUnder ?? ""}`
+        : totalResult === "push"
+          ? "Push"
+          : null;
+
+  return { spreadResultLabel, totalResultLabel };
 }

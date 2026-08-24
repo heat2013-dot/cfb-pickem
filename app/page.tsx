@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { PICKERS } from "@/lib/pickers";
 import { formatRank, formatSpread } from "@/lib/format";
 import { networkLogoUrl } from "@/lib/cfbd";
-import { computeGameResult } from "@/lib/grade";
+import { formatResultLabels } from "@/lib/grade";
 import PickButtons from "@/app/components/PickButtons";
+import GameCard from "@/app/components/GameCard";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
 import PullResultsButton from "@/app/components/PullResultsButton";
 import LockPicksButton from "@/app/components/LockPicksButton";
@@ -87,6 +88,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
   const seasonBest = Math.max(0, ...PICKERS.map((p) => leaderboard[p] ?? 0));
   const weekBest = Math.max(0, ...PICKERS.map((p) => weeklyLeaderboard[p] ?? 0));
+
+  const gameViews = games.map((game) => ({
+    game,
+    locked: picksLocked || game.startDate.getTime() <= now || game.status === "final",
+    ...formatResultLabels(game),
+  }));
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
@@ -202,49 +209,32 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           ) : games.length === 0 ? (
             <p className="text-gray-500">No Top 25 matchups found for this week.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-gray-300 text-left">
-                    <th className="p-2">Matchup</th>
-                    <th className="p-2">Spread</th>
-                    <th className="p-2">O/U</th>
-                    <th className="p-2">Results</th>
-                    {PICKERS.map((p) => (
-                      <th key={p} className="p-2">
-                        {p}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {games.map((game) => {
-                    const locked =
-                      picksLocked || game.startDate.getTime() <= now || game.status === "final";
-                    const { spreadResult, totalResult } = computeGameResult({
-                      homeScore: game.homeScore,
-                      awayScore: game.awayScore,
-                      spread: game.spread,
-                      overUnder: game.overUnder,
-                    });
-                    const spreadResultLabel =
-                      spreadResult === "home"
-                        ? `${game.homeTeam} ${game.spread != null ? formatSpread(game.spread) : ""}`
-                        : spreadResult === "away"
-                          ? `${game.awayTeam} ${game.spread != null ? formatSpread(-game.spread) : ""}`
-                          : spreadResult === "push"
-                            ? "Push"
-                            : null;
-                    const totalResultLabel =
-                      totalResult === "over"
-                        ? `Over ${game.overUnder ?? ""}`
-                        : totalResult === "under"
-                          ? `Under ${game.overUnder ?? ""}`
-                          : totalResult === "push"
-                            ? "Push"
-                            : null;
-                    return (
-                      <tr key={game.id} className="border-b border-gray-100 align-top">
+            <>
+              <div className="space-y-3 sm:hidden">
+                {gameViews.map(({ game, locked }) => (
+                  <GameCard key={game.id} game={game} locked={locked} />
+                ))}
+              </div>
+
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-300 text-left">
+                      <th className="p-2">Matchup</th>
+                      <th className="p-2">Spread</th>
+                      <th className="p-2">O/U</th>
+                      <th className="p-2">Results</th>
+                      {PICKERS.map((p) => (
+                        <th key={p} className="p-2">
+                          {p}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gameViews.map(({ game, locked, spreadResultLabel, totalResultLabel }) => {
+                      return (
+                        <tr key={game.id} className="border-b border-gray-100 align-top">
                         <td className="p-2">
                           <div className="flex items-start gap-2 font-medium">
                             <div className="flex w-16 flex-col items-center gap-1 text-center">
@@ -353,11 +343,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                           );
                         })}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
