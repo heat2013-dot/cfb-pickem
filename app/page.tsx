@@ -169,7 +169,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 <thead>
                   <tr className="border-b border-gray-300 text-left">
                     <th className="p-2">Matchup</th>
-                    <th className="p-2">TV</th>
                     <th className="p-2">Spread</th>
                     <th className="p-2">O/U</th>
                     <th className="p-2">Results</th>
@@ -252,6 +251,19 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                                 timeZoneName: "short",
                               })}
                             </span>
+                            {game.broadcast && (
+                              <span className="flex items-center gap-1">
+                                {networkLogoUrl(game.broadcast) && (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={networkLogoUrl(game.broadcast)!}
+                                    alt=""
+                                    className="h-3.5 w-3.5 flex-shrink-0 object-contain"
+                                  />
+                                )}
+                                <span>{game.broadcast}</span>
+                              </span>
+                            )}
                             {game.status === "final" && (
                               <span className="font-semibold text-gray-700">
                                 Final: {game.awayTeam} {game.awayScore} – {game.homeTeam}{" "}
@@ -259,20 +271,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                               </span>
                             )}
                           </div>
-                        </td>
-                        <td className="p-2">
-                          {game.broadcast &&
-                            (networkLogoUrl(game.broadcast) ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={networkLogoUrl(game.broadcast)!}
-                                alt={game.broadcast}
-                                title={game.broadcast}
-                                className="h-6 w-6 object-contain"
-                              />
-                            ) : (
-                              <span className="text-xs text-gray-500">{game.broadcast}</span>
-                            ))}
                         </td>
                         <td className="p-2">
                           {game.spread != null ? formatSpread(game.spread) : "–"}
