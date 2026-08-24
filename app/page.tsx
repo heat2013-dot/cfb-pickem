@@ -100,7 +100,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3 print:hidden">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
           {weeks.length > 0 && selectedWeek && (
             <WeekSelector
               weeks={weeks.map((w) => ({
