@@ -111,21 +111,23 @@ export default function GameCard({ game, locked }: { game: GameWithPicks; locked
         {PICKERS.map((picker) => {
           const currentPick = game.picks.find((p) => p.picker === picker) ?? null;
           return (
-            <div key={picker} className="flex items-center justify-between gap-3 py-2">
+            <div key={picker} className="flex items-center gap-3 py-2">
               <span className="w-14 flex-shrink-0 text-sm font-medium">{picker}</span>
-              <PickButtons
-                gameId={game.id}
-                picker={picker}
-                homeTeam={game.homeTeam}
-                awayTeam={game.awayTeam}
-                homeLogo={game.homeLogo}
-                awayLogo={game.awayLogo}
-                spread={game.spread}
-                overUnder={game.overUnder}
-                currentPick={currentPick}
-                locked={locked}
-                isFinal={game.status === "final"}
-              />
+              <div className="max-w-56 flex-1">
+                <PickButtons
+                  gameId={game.id}
+                  picker={picker}
+                  homeTeam={game.homeTeam}
+                  awayTeam={game.awayTeam}
+                  homeLogo={game.homeLogo}
+                  awayLogo={game.awayLogo}
+                  spread={game.spread}
+                  overUnder={game.overUnder}
+                  currentPick={currentPick}
+                  locked={locked}
+                  isFinal={game.status === "final"}
+                />
+              </div>
             </div>
           );
         })}
