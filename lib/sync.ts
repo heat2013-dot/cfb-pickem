@@ -67,8 +67,10 @@ async function upsertGamesAndPolls(
   media: Map<number, string>,
   displayPolls: PollTable[],
   records: Map<string, TeamRecord>,
-  includeAllGames = false
+  options: { includeAllGames?: boolean; picksLocked?: boolean; now?: number } = {}
 ): Promise<number> {
+  const { includeAllGames = false, picksLocked = false, now = Date.now() } = options;
+
   // Week 0's real slate is tiny (a handful of games league-wide), so it's
   // shown in full rather than filtered down to just ranked matchups.
   const top25Games = includeAllGames
@@ -78,6 +80,10 @@ async function upsertGamesAndPolls(
   let gamesUpserted = 0;
   for (const g of top25Games) {
     const bestLine = pickBestLine(linesByGameId.get(g.id) ?? []);
+    // Once a game has kicked off, finished, or the week's picks are manually
+    // locked, freeze its line -- picks were made against that number and
+    // must be graded against it, not whatever the market has moved to since.
+    const freezeOdds = picksLocked || g.completed || new Date(g.startDate).getTime() <= now;
     await prisma.game.upsert({
       where: { cfbdGameId: g.id },
       create: {
@@ -106,8 +112,9 @@ async function upsertGamesAndPolls(
         homeRank: rankByTeam.get(g.homeTeam) ?? null,
         awayRank: rankByTeam.get(g.awayTeam) ?? null,
         broadcast: media.get(g.id) ?? null,
-        // Don't clobber an existing line with a null if the odds feed hasn't posted yet.
-        ...(bestLine
+        // Don't clobber an existing line with a null if the odds feed hasn't
+        // posted yet, and don't move it at all once frozen.
+        ...(bestLine && !freezeOdds
           ? { spread: bestLine.spread, overUnder: bestLine.overUnder, oddsProvider: bestLine.provider }
           : {}),
       },
@@ -193,7 +200,7 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
       media,
       displayPolls,
       records,
-      bucket.weekNumber === 0
+      { includeAllGames: bucket.weekNumber === 0, picksLocked: week.picksLocked }
     );
 
     syncedWeeks.push({ weekNumber: bucket.weekNumber, gamesUpserted });
@@ -276,7 +283,7 @@ export async function refreshWeek(weekId: number) {
     media,
     displayPolls,
     records,
-    week.weekNumber === 0
+    { includeAllGames: week.weekNumber === 0, picksLocked: week.picksLocked }
   );
 
   return { refreshed: true, gamesUpserted };
