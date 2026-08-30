@@ -197,6 +197,23 @@ export async function getRecords(year: number): Promise<Map<string, TeamRecord>>
   return new Map(raw.map((r) => [r.team, r.total]));
 }
 
+export interface TeamColors {
+  color: string | null;
+  alternateColor: string | null;
+}
+
+interface RawTeamInfo {
+  school: string;
+  color: string | null;
+  alternateColor: string | null;
+}
+
+/** Returns each FBS team's brand colors, keyed by team name. */
+export async function getTeamColors(year: number): Promise<Map<string, TeamColors>> {
+  const raw = await cfbdFetch<RawTeamInfo[]>("/teams/fbs", { year });
+  return new Map(raw.map((t) => [t.school, { color: t.color, alternateColor: t.alternateColor }]));
+}
+
 export async function getGamesForWeek(
   year: number,
   week: number,
