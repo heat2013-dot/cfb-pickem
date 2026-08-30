@@ -27,25 +27,25 @@ body {
 
 @media print {
   @page {
+    size: landscape;
     margin: 0.5in;
   }
 
-  /* The desktop table's <tr> page-break behavior is unreliable across
-     print engines. Printing always uses a dedicated single-row-per-game
-     div layout instead (#picks-print, normally hidden), which mirrors
-     the table's density but keeps each game together on one page --
-     a block element's break-inside: avoid is far more consistently
-     respected than a table row's. */
-  #picks-table,
+  /* Print the same table shown on screen (not a rebuilt layout), so
+     columns line up exactly like the main page. Always show it
+     regardless of the sm: breakpoint, and hide the mobile card
+     layout, which would otherwise still apply at narrow widths. */
+  #picks-table {
+    display: block !important;
+  }
+
   #picks-cards {
     display: none !important;
   }
 
-  #picks-print {
-    display: block !important;
-  }
-
-  /* Fallback in case a table is ever shown during print again. */
+  /* Best-effort: keeps each game's row from splitting across a page
+     break. Well supported in Chrome; other print engines may still
+     occasionally split an unusually tall row. */
   table tr {
     break-inside: avoid;
     page-break-inside: avoid;
