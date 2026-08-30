@@ -90,13 +90,18 @@ export default function GameCard({ game, locked }: { game: GameWithPicks; locked
         </span>
       </div>
 
-      <div className="mt-3 divide-y divide-gray-100 border-t border-gray-100">
+      <div className="mt-3 divide-y divide-gray-100 border-t border-gray-100 print:flex print:flex-wrap print:justify-center print:gap-x-4 print:divide-y-0 print:border-t-0 print:pt-2">
         {PICKERS.map((picker) => {
           const currentPick = game.picks.find((p) => p.picker === picker) ?? null;
           return (
-            <div key={picker} className="flex items-center gap-3 py-2">
-              <span className="w-14 flex-shrink-0 text-sm font-medium">{picker}</span>
-              <div className="max-w-56 flex-1">
+            <div
+              key={picker}
+              className="flex items-center gap-3 py-2 print:flex-col print:items-center print:gap-1 print:py-0"
+            >
+              <span className="w-14 flex-shrink-0 text-sm font-medium print:w-auto print:text-xs">
+                {picker}
+              </span>
+              <div className="max-w-56 flex-1 print:max-w-none print:flex-none">
                 <PickButtons
                   gameId={game.id}
                   picker={picker}
