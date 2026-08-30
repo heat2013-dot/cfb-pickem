@@ -219,13 +219,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <div className="hidden overflow-x-auto sm:block">
                 <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-gray-300 text-left">
-                      <th className="p-2">Matchup</th>
-                      <th className="p-2">Spread</th>
-                      <th className="p-2">O/U</th>
-                      <th className="p-2">Results</th>
+                    <tr className="text-left">
+                      <th className="border border-gray-300 p-2">Matchup</th>
+                      <th className="border border-gray-300 p-2">Spread</th>
+                      <th className="border border-gray-300 p-2">O/U</th>
+                      <th className="border border-gray-300 p-2">Results</th>
                       {PICKERS.map((p) => (
-                        <th key={p} className="p-2">
+                        <th key={p} className="border border-gray-300 p-2">
                           {p}
                         </th>
                       ))}
@@ -234,8 +234,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   <tbody>
                     {gameViews.map(({ game, locked, spreadResultLabel, totalResultLabel }) => {
                       return (
-                        <tr key={game.id} className="border-b border-gray-100 align-top">
-                        <td className="p-2">
+                        <tr key={game.id} className="align-top">
+                        <td className="border border-gray-200 p-2">
                           <div className="flex items-start gap-2 font-medium">
                             <div className="flex w-16 flex-col items-center gap-1 text-center">
                               {game.awayLogo && (
@@ -300,11 +300,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                             )}
                           </div>
                         </td>
-                        <td className="p-2">
+                        <td className="border border-gray-200 p-2">
                           {game.spread != null ? formatSpread(game.spread) : "–"}
                         </td>
-                        <td className="p-2">{game.overUnder != null ? game.overUnder : "–"}</td>
-                        <td className="p-2">
+                        <td className="border border-gray-200 p-2">
+                          {game.overUnder != null ? game.overUnder : "–"}
+                        </td>
+                        <td className="border border-gray-200 p-2">
                           {game.status === "final" ? (
                             <div className="flex flex-col gap-1">
                               {spreadResultLabel && (
@@ -325,7 +327,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                         {PICKERS.map((picker) => {
                           const currentPick = game.picks.find((p) => p.picker === picker) ?? null;
                           return (
-                            <td key={picker} className="p-2">
+                            <td key={picker} className="border border-gray-200 p-2">
                               <PickButtons
                                 gameId={game.id}
                                 picker={picker}
