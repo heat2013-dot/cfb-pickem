@@ -5,6 +5,7 @@ import { formatRank, formatSpread } from "@/lib/format";
 import { networkLogoUrl } from "@/lib/cfbd";
 import PickButtons from "@/app/components/PickButtons";
 import GameCard from "@/app/components/GameCard";
+import GamePrintRow from "@/app/components/GamePrintRow";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
 import PullResultsButton from "@/app/components/PullResultsButton";
 import LockPicksButton from "@/app/components/LockPicksButton";
@@ -211,6 +212,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <div id="picks-cards" className="space-y-3 sm:hidden">
                 {gameViews.map(({ game, locked }) => (
                   <GameCard key={game.id} game={game} locked={locked} />
+                ))}
+              </div>
+
+              <div id="picks-print" className="hidden">
+                {gameViews.map(({ game, locked }) => (
+                  <GamePrintRow key={game.id} game={game} locked={locked} />
                 ))}
               </div>
 

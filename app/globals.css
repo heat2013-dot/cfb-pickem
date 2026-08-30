@@ -31,15 +31,17 @@ body {
   }
 
   /* The desktop table's <tr> page-break behavior is unreliable across
-     print engines. Printing always uses the card-per-game layout
-     instead (normally mobile-only), since a block element's
-     break-inside: avoid is far more consistently respected than a
-     table row's -- regardless of the screen width at print time. */
-  #picks-table {
+     print engines. Printing always uses a dedicated single-row-per-game
+     div layout instead (#picks-print, normally hidden), which mirrors
+     the table's density but keeps each game together on one page --
+     a block element's break-inside: avoid is far more consistently
+     respected than a table row's. */
+  #picks-table,
+  #picks-cards {
     display: none !important;
   }
 
-  #picks-cards {
+  #picks-print {
     display: block !important;
   }
 
