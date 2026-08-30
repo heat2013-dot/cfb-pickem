@@ -27,12 +27,23 @@ body {
 
 @media print {
   @page {
-    size: landscape;
     margin: 0.5in;
   }
 
-  /* Keep each game's whole row/card together on one page instead of
-     splitting it across a page break. */
+  /* The desktop table's <tr> page-break behavior is unreliable across
+     print engines. Printing always uses the card-per-game layout
+     instead (normally mobile-only), since a block element's
+     break-inside: avoid is far more consistently respected than a
+     table row's -- regardless of the screen width at print time. */
+  #picks-table {
+    display: none !important;
+  }
+
+  #picks-cards {
+    display: block !important;
+  }
+
+  /* Fallback in case a table is ever shown during print again. */
   table tr {
     break-inside: avoid;
     page-break-inside: avoid;

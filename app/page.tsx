@@ -208,13 +208,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             <p className="text-gray-500">No Top 25 matchups found for this week.</p>
           ) : (
             <>
-              <div className="space-y-3 sm:hidden">
+              <div id="picks-cards" className="space-y-3 sm:hidden">
                 {gameViews.map(({ game, locked }) => (
                   <GameCard key={game.id} game={game} locked={locked} />
                 ))}
               </div>
 
-              <div className="hidden overflow-x-auto sm:block">
+              <div id="picks-table" className="hidden overflow-x-auto sm:block">
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="text-left">
