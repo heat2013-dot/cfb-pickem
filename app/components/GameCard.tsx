@@ -1,7 +1,6 @@
 import { PICKERS } from "@/lib/pickers";
 import { formatRank, formatSpread } from "@/lib/format";
 import { networkLogoUrl } from "@/lib/cfbd";
-import { formatResultLabels } from "@/lib/grade";
 import PickButtons from "@/app/components/PickButtons";
 
 type GameWithPicks = {
@@ -23,7 +22,6 @@ type GameWithPicks = {
 };
 
 export default function GameCard({ game, locked }: { game: GameWithPicks; locked: boolean }) {
-  const { spreadResultLabel, totalResultLabel } = formatResultLabels(game);
   const broadcastLogo = game.broadcast ? networkLogoUrl(game.broadcast) : null;
 
   return (
@@ -91,21 +89,6 @@ export default function GameCard({ game, locked }: { game: GameWithPicks; locked
           {game.overUnder != null ? game.overUnder : "–"}
         </span>
       </div>
-
-      {(spreadResultLabel || totalResultLabel) && (
-        <div className="mt-2 flex flex-wrap justify-center gap-1">
-          {spreadResultLabel && (
-            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-              {spreadResultLabel}
-            </span>
-          )}
-          {totalResultLabel && (
-            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-              {totalResultLabel}
-            </span>
-          )}
-        </div>
-      )}
 
       <div className="mt-3 divide-y divide-gray-100 border-t border-gray-100">
         {PICKERS.map((picker) => {

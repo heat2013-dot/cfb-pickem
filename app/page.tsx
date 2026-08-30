@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { PICKERS } from "@/lib/pickers";
 import { formatRank, formatSpread } from "@/lib/format";
 import { networkLogoUrl } from "@/lib/cfbd";
-import { formatResultLabels } from "@/lib/grade";
 import PickButtons from "@/app/components/PickButtons";
 import GameCard from "@/app/components/GameCard";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
@@ -92,7 +91,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const gameViews = games.map((game) => ({
     game,
     locked: picksLocked || game.startDate.getTime() <= now || game.status === "final",
-    ...formatResultLabels(game),
   }));
 
   return (
@@ -232,7 +230,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     </tr>
                   </thead>
                   <tbody>
-                    {gameViews.map(({ game, locked, spreadResultLabel, totalResultLabel }) => {
+                    {gameViews.map(({ game, locked }) => {
                       return (
                         <tr key={game.id} className="align-top">
                         <td className="border border-gray-200 p-2">
@@ -292,12 +290,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                                 <span>{game.broadcast}</span>
                               </span>
                             )}
-                            {game.status === "final" && (
-                              <span className="font-semibold text-gray-700">
-                                Final: {game.awayTeam} {game.awayScore} – {game.homeTeam}{" "}
-                                {game.homeScore}
-                              </span>
-                            )}
                           </div>
                         </td>
                         <td className="border border-gray-200 p-2">
@@ -308,18 +300,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                         </td>
                         <td className="border border-gray-200 p-2">
                           {game.status === "final" ? (
-                            <div className="flex flex-col gap-1">
-                              {spreadResultLabel && (
-                                <span className="inline-block w-fit rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-                                  {spreadResultLabel}
-                                </span>
-                              )}
-                              {totalResultLabel && (
-                                <span className="inline-block w-fit rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-                                  {totalResultLabel}
-                                </span>
-                              )}
-                            </div>
+                            <span className="font-semibold text-gray-700">
+                              {game.awayTeam} {game.awayScore} – {game.homeTeam} {game.homeScore}
+                            </span>
                           ) : (
                             <span className="text-xs text-gray-400">–</span>
                           )}
