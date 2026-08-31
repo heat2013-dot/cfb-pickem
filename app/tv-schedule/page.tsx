@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getTeamColors, networkLogoUrl } from "@/lib/cfbd";
+import { getTeamColors, networkLogoUrl, type TeamColors } from "@/lib/cfbd";
 import { formatRank } from "@/lib/format";
 import WeekSelector from "@/app/components/WeekSelector";
 
@@ -49,7 +49,14 @@ export default async function TvSchedulePage({ searchParams }: PageProps<"/tv-sc
       })
     : [];
 
-  const colors = selectedWeek ? await getTeamColors(selectedWeek.season) : new Map();
+  // If CFBD is unavailable or rate-limited, fall back to no colors (each bar
+  // shows a neutral gray) rather than crashing the whole page.
+  const colors = selectedWeek
+    ? await getTeamColors(selectedWeek.season).catch((err) => {
+        console.error("getTeamColors failed, falling back to default bar colors", err);
+        return new Map<string, TeamColors>();
+      })
+    : new Map<string, TeamColors>();
 
   const byDay = new Map<string, typeof games>();
   for (const g of games) {
@@ -117,7 +124,7 @@ function ScheduleGrid({
   colors,
 }: {
   games: ScheduleGame[];
-  colors: Map<string, { color: string | null; alternateColor: string | null }>;
+  colors: Map<string, TeamColors>;
 }) {
   const starts = games.map((g) => g.startDate.getTime());
   const ends = starts.map((s) => s + GAME_DURATION_MS);
