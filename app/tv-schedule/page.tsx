@@ -273,7 +273,7 @@ function ScheduleGrid({
               >
                 <div className="truncate">
                   {formatRank(game.awayRank)}
-                  {game.awayTeam}
+                  {game.awayTeam} @
                 </div>
                 <div className="truncate">
                   {formatRank(game.homeRank)}

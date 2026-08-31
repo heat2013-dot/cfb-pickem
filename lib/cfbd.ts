@@ -257,42 +257,45 @@ export async function getMediaForWeek(
   return byGame;
 }
 
-// CFBD doesn't provide broadcaster logos, so we look them up by domain via a
-// favicon service. Falls back to just showing the outlet name as text.
-const OUTLET_DOMAINS: Record<string, string> = {
-  ESPN: "espn.com",
-  ESPN2: "espn.com",
-  ESPNU: "espn.com",
-  ESPNEWS: "espn.com",
-  "ESPN+": "espn.com",
-  ABC: "abc.com",
-  FOX: "fox.com",
-  FS1: "foxsports.com",
-  FS2: "foxsports.com",
-  CBS: "cbs.com",
-  CBSSN: "cbssports.com",
-  NBC: "nbc.com",
-  Peacock: "peacock.com",
-  "The CW": "cwtv.com",
-  "SEC Network": "secsports.com",
-  "SEC Network+": "secsports.com",
-  "SECN+": "secsports.com",
-  "ACC Network": "theacc.com",
-  "ACCN": "theacc.com",
-  "ACCNX": "theacc.com",
-  "Big Ten Network": "btn.com",
-  "BTN": "btn.com",
-  "Big 12 Now": "big12sports.com",
-  "The Big Ten Network": "btn.com",
-  "Pac-12 Network": "pac-12.com",
-  "NFL Network": "nfl.com",
-  NFLN: "nfl.com",
+// CFBD doesn't provide broadcaster logos. A favicon-by-domain lookup can't
+// tell ESPN/ESPN2/ESPNU (or SEC Network/SEC Network+) apart since they share
+// a domain, so these are real per-channel logos instead (Wikimedia Commons/
+// Wikipedia, verified to load). SEC Network+ has no distinct brand of its
+// own -- it's explicitly ESPN+'s SEC-specific stream -- so "SECN+" uses the
+// ESPN+ logo. Falls back to showing the outlet name as text if unmapped.
+const OUTLET_LOGOS: Record<string, string> = {
+  ESPN: "https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg",
+  ESPN2: "https://upload.wikimedia.org/wikipedia/commons/b/bf/ESPN2_logo.svg",
+  ESPNU: "https://upload.wikimedia.org/wikipedia/commons/c/ca/ESPN_U_logo.svg",
+  ESPNEWS: "https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg",
+  "ESPN+": "https://upload.wikimedia.org/wikipedia/commons/8/80/ESPN_Plus.svg",
+  "SECN+": "https://upload.wikimedia.org/wikipedia/commons/8/80/ESPN_Plus.svg",
+  "SEC Network+": "https://upload.wikimedia.org/wikipedia/commons/8/80/ESPN_Plus.svg",
+  ABC: "https://upload.wikimedia.org/wikipedia/commons/2/2f/ABC-2021-LOGO.svg",
+  FOX: "https://upload.wikimedia.org/wikipedia/commons/c/c0/Fox_Broadcasting_Company_logo_%282019%29.svg",
+  FS1: "https://upload.wikimedia.org/wikipedia/commons/3/37/2015_Fox_Sports_1_logo.svg",
+  FS2: "https://upload.wikimedia.org/wikipedia/commons/3/37/2015_Fox_Sports_1_logo.svg",
+  CBS: "https://upload.wikimedia.org/wikipedia/commons/e/ee/CBS_logo_%282020%29.svg",
+  CBSSN: "https://upload.wikimedia.org/wikipedia/commons/0/04/CBS_Sports_Network_2021.svg",
+  NBC: "https://upload.wikimedia.org/wikipedia/commons/7/7a/NBC_logo_2022_%28vertical%29.svg",
+  Peacock: "https://upload.wikimedia.org/wikipedia/commons/2/20/NBCUniversal_Peacock_Logo_%282026%29.svg",
+  "The CW": "https://upload.wikimedia.org/wikipedia/commons/b/b1/The_CW_2024.svg",
+  CW: "https://upload.wikimedia.org/wikipedia/commons/b/b1/The_CW_2024.svg",
+  "SEC Network": "https://upload.wikimedia.org/wikipedia/commons/f/fd/SEC_Network_%282024%29.svg",
+  "ACC Network": "https://upload.wikimedia.org/wikipedia/commons/f/fd/ACC_Network_ESPN_logo.svg",
+  ACCN: "https://upload.wikimedia.org/wikipedia/commons/f/fd/ACC_Network_ESPN_logo.svg",
+  ACCNX: "https://upload.wikimedia.org/wikipedia/commons/f/fd/ACC_Network_ESPN_logo.svg",
+  "Big Ten Network": "https://upload.wikimedia.org/wikipedia/en/3/39/Big_Ten_Network_Logo.svg",
+  BTN: "https://upload.wikimedia.org/wikipedia/en/3/39/Big_Ten_Network_Logo.svg",
+  "The Big Ten Network": "https://upload.wikimedia.org/wikipedia/en/3/39/Big_Ten_Network_Logo.svg",
+  "Pac-12 Network": "https://upload.wikimedia.org/wikipedia/en/8/85/Pac-12_Network_logo.png",
+  "NFL Network": "https://upload.wikimedia.org/wikipedia/en/8/8f/NFL_Network_logo.svg",
+  NFLN: "https://upload.wikimedia.org/wikipedia/en/8/8f/NFL_Network_logo.svg",
 };
 
 export function networkLogoUrl(outlet: string | null | undefined): string | null {
   if (!outlet) return null;
-  const domain = OUTLET_DOMAINS[outlet];
-  return domain ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : null;
+  return OUTLET_LOGOS[outlet] ?? null;
 }
 
 export async function getLinesForWeek(
