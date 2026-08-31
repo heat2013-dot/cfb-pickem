@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 const SLOT_MIN = 30;
 const SLOT_MS = SLOT_MIN * 60 * 1000;
 const GAME_DURATION_MS = 3.5 * 60 * 60 * 1000;
-const SLOT_WIDTH = 46;
-const LABEL_WIDTH = 60;
+const SLOT_WIDTH = 38;
+const LABEL_WIDTH = 50;
 const DEFAULT_COLOR = "#4b5563";
 
 function floorToSlot(ms: number) {
