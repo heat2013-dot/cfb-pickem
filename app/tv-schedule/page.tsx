@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getTeamColors, type TeamColors } from "@/lib/cfbd";
+import { getTeamColors, networkLogoUrl } from "@/lib/cfbd";
 import { formatRank } from "@/lib/format";
 import WeekSelector from "@/app/components/WeekSelector";
 
@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 const SLOT_MIN = 30;
 const SLOT_MS = SLOT_MIN * 60 * 1000;
 const GAME_DURATION_MS = 3.5 * 60 * 60 * 1000;
-const SLOT_WIDTH = 76;
-const LABEL_WIDTH = 150;
+const SLOT_WIDTH = 46;
+const LABEL_WIDTH = 60;
 const DEFAULT_COLOR = "#4b5563";
 
 function floorToSlot(ms: number) {
@@ -18,6 +18,17 @@ function floorToSlot(ms: number) {
 }
 function ceilToSlot(ms: number) {
   return Math.ceil(ms / SLOT_MS) * SLOT_MS;
+}
+function dayKeyET(date: Date): string {
+  return date.toLocaleDateString("en-US", { timeZone: "America/New_York" });
+}
+function dayLabelET(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    timeZone: "America/New_York",
+  });
 }
 
 export default async function TvSchedulePage({ searchParams }: PageProps<"/tv-schedule">) {
@@ -38,9 +49,17 @@ export default async function TvSchedulePage({ searchParams }: PageProps<"/tv-sc
       })
     : [];
 
-  const colors = selectedWeek
-    ? await getTeamColors(selectedWeek.season)
-    : new Map<string, TeamColors>();
+  const colors = selectedWeek ? await getTeamColors(selectedWeek.season) : new Map();
+
+  const byDay = new Map<string, typeof games>();
+  for (const g of games) {
+    const key = dayKeyET(g.startDate);
+    if (!byDay.has(key)) byDay.set(key, []);
+    byDay.get(key)!.push(g);
+  }
+  const days = [...byDay.entries()].sort(
+    (a, b) => a[1][0].startDate.getTime() - b[1][0].startDate.getTime()
+  );
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
@@ -49,12 +68,12 @@ export default async function TvSchedulePage({ searchParams }: PageProps<"/tv-sc
         <div className="flex items-center gap-3">
           {weeks.length > 0 && selectedWeek && (
             <WeekSelector
-              basePath="/tv-schedule"
               weeks={weeks.map((w) => ({
                 id: w.id,
                 label: `${w.season} Wk ${w.weekNumber}${w.isCurrent ? " (current)" : ""}`,
               }))}
               selectedId={selectedWeek.id}
+              basePath="/tv-schedule"
             />
           )}
           <Link href="/" className="text-sm text-blue-600 hover:underline">
@@ -63,10 +82,19 @@ export default async function TvSchedulePage({ searchParams }: PageProps<"/tv-sc
         </div>
       </div>
 
-      {!selectedWeek || games.length === 0 ? (
+      {!selectedWeek || days.length === 0 ? (
         <p className="text-gray-500">No scheduled games with broadcast info for this week yet.</p>
       ) : (
-        <ScheduleGrid games={games} colors={colors} />
+        <div className="flex flex-col gap-8">
+          {days.map(([key, dayGames]) => (
+            <div key={key}>
+              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                {dayLabelET(dayGames[0].startDate)} · All times ET
+              </h2>
+              <ScheduleGrid games={dayGames} colors={colors} />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -89,7 +117,7 @@ function ScheduleGrid({
   colors,
 }: {
   games: ScheduleGame[];
-  colors: Map<string, TeamColors>;
+  colors: Map<string, { color: string | null; alternateColor: string | null }>;
 }) {
   const starts = games.map((g) => g.startDate.getTime());
   const ends = starts.map((s) => s + GAME_DURATION_MS);
@@ -145,7 +173,7 @@ function ScheduleGrid({
     const t = new Date(gridStart + i * SLOT_MS);
     return t.toLocaleString("en-US", {
       hour: "numeric",
-      minute: "2-digit",
+      minute: t.getMinutes() === 0 ? undefined : "2-digit",
       timeZone: "America/New_York",
     });
   });
@@ -158,17 +186,15 @@ function ScheduleGrid({
         className="grid text-xs"
         style={{
           gridTemplateColumns,
-          gridTemplateRows: `36px repeat(${totalRows}, 64px)`,
+          gridTemplateRows: `28px repeat(${totalRows}, 52px)`,
         }}
       >
         {/* Header row */}
-        <div className="sticky left-0 z-10 flex items-center border-b border-gray-300 bg-gray-100 px-2 font-semibold text-gray-500">
-          Network
-        </div>
+        <div className="sticky left-0 z-10 border-b border-gray-300 bg-gray-100" />
         {timeLabels.map((label, i) => (
           <div
             key={i}
-            className="flex items-center justify-center border-b border-l border-gray-200 bg-gray-100 font-medium text-gray-600"
+            className="flex items-center justify-center border-b border-l border-gray-200 bg-gray-100 text-[10px] font-medium text-gray-600"
             style={{ gridColumn: i + 2, gridRow: 1 }}
           >
             {label}
@@ -179,13 +205,22 @@ function ScheduleGrid({
         {networkOrder.map((network) => {
           const startRow = networkStartRow.get(network)!;
           const laneCount = laneCountByNetwork.get(network) ?? 1;
+          const logo = networkLogoUrl(network);
           return (
             <div
               key={network}
-              className="sticky left-0 z-10 flex items-center border-b border-gray-200 bg-white px-2 font-semibold text-gray-700"
+              className="sticky left-0 z-10 flex items-center justify-center border-b border-gray-200 bg-white p-1"
               style={{ gridColumn: 1, gridRow: `${startRow} / span ${laneCount}` }}
+              title={network}
             >
-              {network}
+              {logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logo} alt={network} className="h-6 w-6 object-contain" />
+              ) : (
+                <span className="text-center text-[9px] font-semibold text-gray-600">
+                  {network}
+                </span>
+              )}
             </div>
           );
         })}
@@ -216,36 +251,43 @@ function ScheduleGrid({
           return (
             <div
               key={game.id}
-              className="m-1 flex overflow-hidden rounded-md text-white shadow-sm"
+              className="m-0.5 flex items-center gap-1 overflow-hidden rounded-md px-1 text-white shadow-sm"
               style={{
                 gridColumn: `${colStart} / ${colEnd}`,
                 gridRow: row,
-                background: `linear-gradient(to bottom, ${awayColor} 50%, ${homeColor} 50%)`,
+                background: `linear-gradient(to right, ${awayColor}, ${homeColor})`,
               }}
               title={`${game.awayTeam} @ ${game.homeTeam}`}
             >
-              <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-1.5 py-1 text-[10px] leading-tight">
-                <div className="flex items-center gap-1 truncate" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>
-                  {game.awayLogo && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={game.awayLogo} alt="" className="h-3.5 w-3.5 flex-shrink-0 object-contain" />
-                  )}
-                  <span className="truncate">
-                    {formatRank(game.awayRank)}
-                    {game.awayTeam}
-                  </span>
+              {game.awayLogo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={game.awayLogo}
+                  alt=""
+                  className="h-6 w-6 flex-shrink-0 rounded-full bg-white/90 object-contain p-0.5"
+                />
+              )}
+              <div
+                className="min-w-0 flex-1 text-center text-[9px] leading-tight font-semibold"
+                style={{ textShadow: "0 1px 2px rgba(0,0,0,0.7)" }}
+              >
+                <div className="truncate">
+                  {formatRank(game.awayRank)}
+                  {game.awayTeam}
                 </div>
-                <div className="flex items-center gap-1 truncate font-bold" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>
-                  {game.homeLogo && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={game.homeLogo} alt="" className="h-3.5 w-3.5 flex-shrink-0 object-contain" />
-                  )}
-                  <span className="truncate">
-                    {formatRank(game.homeRank)}
-                    {game.homeTeam}
-                  </span>
+                <div className="truncate">
+                  {formatRank(game.homeRank)}
+                  {game.homeTeam}
                 </div>
               </div>
+              {game.homeLogo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={game.homeLogo}
+                  alt=""
+                  className="h-6 w-6 flex-shrink-0 rounded-full bg-white/90 object-contain p-0.5"
+                />
+              )}
             </div>
           );
         })}
