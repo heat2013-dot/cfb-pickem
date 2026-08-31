@@ -19,15 +19,15 @@ function floorToSlot(ms: number) {
 function ceilToSlot(ms: number) {
   return Math.ceil(ms / SLOT_MS) * SLOT_MS;
 }
-function dayKeyET(date: Date): string {
-  return date.toLocaleDateString("en-US", { timeZone: "America/New_York" });
+function dayKeyCT(date: Date): string {
+  return date.toLocaleDateString("en-US", { timeZone: "America/Chicago" });
 }
-function dayLabelET(date: Date): string {
+function dayLabelCT(date: Date): string {
   return date.toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
     day: "numeric",
-    timeZone: "America/New_York",
+    timeZone: "America/Chicago",
   });
 }
 
@@ -53,7 +53,7 @@ export default async function TvSchedulePage({ searchParams }: PageProps<"/tv-sc
 
   const byDay = new Map<string, typeof games>();
   for (const g of games) {
-    const key = dayKeyET(g.startDate);
+    const key = dayKeyCT(g.startDate);
     if (!byDay.has(key)) byDay.set(key, []);
     byDay.get(key)!.push(g);
   }
@@ -89,7 +89,7 @@ export default async function TvSchedulePage({ searchParams }: PageProps<"/tv-sc
           {days.map(([key, dayGames]) => (
             <div key={key}>
               <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                {dayLabelET(dayGames[0].startDate)} · All times ET
+                {dayLabelCT(dayGames[0].startDate)} · All times CT
               </h2>
               <ScheduleGrid games={dayGames} colors={colors} />
             </div>
@@ -174,7 +174,7 @@ function ScheduleGrid({
     return t.toLocaleString("en-US", {
       hour: "numeric",
       minute: t.getMinutes() === 0 ? undefined : "2-digit",
-      timeZone: "America/New_York",
+      timeZone: "America/Chicago",
     });
   });
 
@@ -268,7 +268,7 @@ function ScheduleGrid({
                 />
               )}
               <div
-                className="min-w-0 flex-1 text-center text-[9px] leading-tight font-semibold"
+                className="min-w-0 flex-1 text-center text-xs leading-tight font-semibold"
                 style={{ textShadow: "0 1px 2px rgba(0,0,0,0.7)" }}
               >
                 <div className="truncate">

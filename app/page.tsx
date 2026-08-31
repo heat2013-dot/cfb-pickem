@@ -279,7 +279,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                                 day: "numeric",
                                 hour: "numeric",
                                 minute: "2-digit",
-                                timeZone: "America/New_York",
+                                timeZone: "America/Chicago",
                                 timeZoneName: "short",
                               })}
                             </span>

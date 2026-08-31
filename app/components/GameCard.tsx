@@ -58,7 +58,7 @@ export default function GameCard({ game, locked }: { game: GameWithPicks; locked
             day: "numeric",
             hour: "numeric",
             minute: "2-digit",
-            timeZone: "America/New_York",
+            timeZone: "America/Chicago",
             timeZoneName: "short",
           })}
         </span>
