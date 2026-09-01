@@ -277,6 +277,22 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
 }
 
 /**
+ * DB-only signal for the daily grade cron: is it worth paying for a full
+ * CFBD re-sync to check whether the next week's poll/schedule is out yet?
+ * True once it's been >=24h since the current week's last game kicked off,
+ * so "current" doesn't sit on a finished week until the Wednesday sync.
+ */
+export async function currentWeekIsStale(now: Date = new Date()): Promise<boolean> {
+  const week = await prisma.week.findFirst({
+    where: { isCurrent: true },
+    include: { games: { select: { startDate: true } } },
+  });
+  if (!week || week.games.length === 0) return false;
+  const lastStart = Math.max(...week.games.map((g) => g.startDate.getTime()));
+  return now.getTime() - lastStart >= DAY_MS;
+}
+
+/**
  * Manual per-week refresh: re-pulls that week's matchups (in case a team's
  * ranking changed which games count as Top 25), lines, broadcast info, and
  * poll tables. Unlike syncWeek, this targets one already-existing week and

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { pullResults } from "@/lib/refresh";
+import { currentWeekIsStale, syncCurrentWeek } from "@/lib/sync";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +20,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ refreshed: false, reason: "No current week has been synced yet." });
     }
     const result = await pullResults(week.id);
+
+    // Once the current week's last game is >=24h old, try pulling the next
+    // week's poll/schedule so "current" advances without waiting for
+    // Wednesday's full sync. Cheap no-op on days it's not due yet.
+    const advanced = (await currentWeekIsStale()) ? await syncCurrentWeek() : null;
+
     revalidatePath("/");
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, advanced });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },
