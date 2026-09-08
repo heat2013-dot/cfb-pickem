@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { pullResults } from "@/lib/refresh";
+import { refreshAll } from "@/lib/refresh";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (!weekId) {
       return NextResponse.json({ error: "weekId is required" }, { status: 400 });
     }
-    const result = await pullResults(weekId);
+    const result = await refreshAll(weekId);
     revalidatePath("/");
     return NextResponse.json(result);
   } catch (err) {

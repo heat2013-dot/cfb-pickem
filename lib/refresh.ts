@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getGamesForWeek, type SeasonType } from "@/lib/cfbd";
 import { gradePick } from "@/lib/grade";
-import { resolveCfbdQueryWeek, gamesForWeek } from "@/lib/sync";
+import { resolveCfbdQueryWeek, gamesForWeek, refreshWeek, advanceToNextWeek } from "@/lib/sync";
 
 /**
  * Pulls the latest scores for one week's games, marks any that have gone
@@ -49,4 +49,23 @@ export async function pullResults(weekId: number) {
   }
 
   return { refreshed: true, gamesGraded };
+}
+
+/**
+ * The single "Refresh" button's action: re-pulls odds/matchups, grades any
+ * newly-final games, and -- only if this is the current week -- tries to
+ * advance to the next one. Combines refreshWeek + pullResults + (maybe)
+ * advanceToNextWeek so the UI doesn't need three separate buttons.
+ */
+export async function refreshAll(weekId: number) {
+  const week = await prisma.week.findUnique({ where: { id: weekId } });
+  if (!week) {
+    return { refreshed: false, reason: "Week not found." };
+  }
+
+  const odds = await refreshWeek(weekId);
+  const results = await pullResults(weekId);
+  const advanced = week.isCurrent ? await advanceToNextWeek(weekId) : null;
+
+  return { refreshed: true, odds, results, advanced };
 }

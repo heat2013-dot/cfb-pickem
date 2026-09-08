@@ -5,9 +5,7 @@ import { formatRank, formatSpread } from "@/lib/format";
 import { networkLogoUrl } from "@/lib/cfbd";
 import PickButtons from "@/app/components/PickButtons";
 import GameCard from "@/app/components/GameCard";
-import RefreshOddsButton from "@/app/components/RefreshOddsButton";
-import AdvanceWeekButton from "@/app/components/AdvanceWeekButton";
-import PullResultsButton from "@/app/components/PullResultsButton";
+import RefreshButton from "@/app/components/RefreshButton";
 import LockPicksButton from "@/app/components/LockPicksButton";
 import WeekSelector from "@/app/components/WeekSelector";
 import PollTables from "@/app/components/PollTables";
@@ -118,10 +116,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           )}
           {selectedWeek && (
             <>
-              <RefreshOddsButton weekId={selectedWeek.id} />
-              <PullResultsButton weekId={selectedWeek.id} />
+              <RefreshButton weekId={selectedWeek.id} />
               <LockPicksButton weekId={selectedWeek.id} locked={selectedWeek.picksLocked} />
-              {selectedWeek.isCurrent && <AdvanceWeekButton weekId={selectedWeek.id} />}
             </>
           )}
           <PrintButton />
