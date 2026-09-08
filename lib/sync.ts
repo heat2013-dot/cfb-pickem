@@ -293,6 +293,25 @@ export async function currentWeekIsStale(now: Date = new Date()): Promise<boolea
 }
 
 /**
+ * Manual override for the "Next Week" button: force-advances past the
+ * current week regardless of the 24h-since-last-game heuristic, in case
+ * someone doesn't want to wait for the next automatic sync.
+ */
+export async function advanceToNextWeek(currentWeekId: number) {
+  const current = await prisma.week.findUnique({ where: { id: currentWeekId } });
+  if (!current) {
+    return { advanced: false, reason: "Current week not found." };
+  }
+
+  const nextWeekNumber = current.weekNumber + 1;
+  const result = await syncWeek(current.season, nextWeekNumber, current.seasonType as SeasonType);
+  if (!result.synced) {
+    return { advanced: false, reason: result.reason ?? "Could not sync next week." };
+  }
+  return { advanced: true, ...result };
+}
+
+/**
  * Manual per-week refresh: re-pulls that week's matchups (in case a team's
  * ranking changed which games count as Top 25), lines, broadcast info, and
  * poll tables. Unlike syncWeek, this targets one already-existing week and

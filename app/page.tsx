@@ -6,6 +6,7 @@ import { networkLogoUrl } from "@/lib/cfbd";
 import PickButtons from "@/app/components/PickButtons";
 import GameCard from "@/app/components/GameCard";
 import RefreshOddsButton from "@/app/components/RefreshOddsButton";
+import AdvanceWeekButton from "@/app/components/AdvanceWeekButton";
 import PullResultsButton from "@/app/components/PullResultsButton";
 import LockPicksButton from "@/app/components/LockPicksButton";
 import WeekSelector from "@/app/components/WeekSelector";
@@ -120,6 +121,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <RefreshOddsButton weekId={selectedWeek.id} />
               <PullResultsButton weekId={selectedWeek.id} />
               <LockPicksButton weekId={selectedWeek.id} locked={selectedWeek.picksLocked} />
+              {selectedWeek.isCurrent && <AdvanceWeekButton weekId={selectedWeek.id} />}
             </>
           )}
           <PrintButton />
