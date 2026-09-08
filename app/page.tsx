@@ -39,7 +39,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const games = selectedWeek
     ? await prisma.game.findMany({
         where: { weekId: selectedWeek.id },
-        orderBy: { startDate: "asc" },
+        // id is a tiebreaker so games with the same kickoff keep a stable
+        // order across refreshes -- Postgres doesn't guarantee tie order
+        // on startDate alone, and CFBD doesn't return games in a fixed order.
+        orderBy: [{ startDate: "asc" }, { id: "asc" }],
         include: { picks: true },
       })
     : [];

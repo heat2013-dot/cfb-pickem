@@ -45,7 +45,7 @@ export default async function TvSchedulePage({ searchParams }: PageProps<"/tv-sc
   const games = selectedWeek
     ? await prisma.game.findMany({
         where: { weekId: selectedWeek.id, broadcast: { not: null } },
-        orderBy: { startDate: "asc" },
+        orderBy: [{ startDate: "asc" }, { id: "asc" }],
       })
     : [];
 
