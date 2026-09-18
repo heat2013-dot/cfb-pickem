@@ -37,20 +37,44 @@ export default async function StandingsPage() {
     weeks.map((w) => [w.id, highestOf(PICKERS.map((p) => weeklyPoints[p][w.id] ?? 0))])
   ) as Record<number, number>;
 
-  // Fun stats: spread vs. over/under accuracy per picker, season-wide.
+  // Fun stats: favorite vs. underdog and over/under accuracy per picker,
+  // season-wide.
   const graded = await prisma.pick.findMany({
     where: { isCorrect: { not: null } },
-    select: { picker: true, betType: true, isCorrect: true },
+    select: {
+      picker: true,
+      betType: true,
+      side: true,
+      isCorrect: true,
+      game: { select: { spread: true } },
+    },
   });
   type BetStat = { made: number; correct: number };
   const stats = Object.fromEntries(
     PICKERS.map((p) => [
       p,
-      { spread: { made: 0, correct: 0 } as BetStat, total: { made: 0, correct: 0 } as BetStat },
+      {
+        favorite: { made: 0, correct: 0 } as BetStat,
+        underdog: { made: 0, correct: 0 } as BetStat,
+        total: { made: 0, correct: 0 } as BetStat,
+      },
     ])
-  ) as Record<string, { spread: BetStat; total: BetStat }>;
+  ) as Record<string, { favorite: BetStat; underdog: BetStat; total: BetStat }>;
   for (const pick of graded) {
-    const bucket = pick.betType === "spread" ? stats[pick.picker].spread : stats[pick.picker].total;
+    if (pick.betType === "total") {
+      const bucket = stats[pick.picker].total;
+      bucket.made++;
+      if (pick.isCorrect) bucket.correct++;
+      continue;
+    }
+
+    // Spread pick: figure out whether the side taken was laying points
+    // (favorite) or getting points (underdog). Pick'em games (spread 0)
+    // have no favorite, so they're excluded from both buckets.
+    const spread = pick.game.spread;
+    if (spread == null || spread === 0) continue;
+    const tookFavorite = pick.side === "home" ? spread < 0 : spread > 0;
+    const bucket = tookFavorite ? stats[pick.picker].favorite : stats[pick.picker].underdog;
     bucket.made++;
     if (pick.isCorrect) bucket.correct++;
   }
@@ -122,26 +146,33 @@ export default async function StandingsPage() {
               Accuracy split by bet type, across every graded pick this season.
             </p>
             <div className="overflow-x-auto">
-              <table className="w-full max-w-2xl border-collapse text-sm">
+              <table className="w-full max-w-3xl border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-300 text-left">
                     <th className="p-2">Picker</th>
-                    <th className="p-2 text-center">Spread record</th>
+                    <th className="p-2 text-center">Favorite record</th>
+                    <th className="p-2 text-center">Underdog record</th>
                     <th className="p-2 text-center">O/U record</th>
                   </tr>
                 </thead>
                 <tbody>
                   {PICKERS.map((p) => {
-                    const s = stats[p].spread;
+                    const f = stats[p].favorite;
+                    const u = stats[p].underdog;
                     const t = stats[p].total;
-                    const sPct = pct(s);
+                    const fPct = pct(f);
+                    const uPct = pct(u);
                     const tPct = pct(t);
                     return (
                       <tr key={p} className="border-b border-gray-100">
                         <td className="p-2 font-medium">{p}</td>
                         <td className="p-2 text-center text-gray-700">
-                          {s.correct}-{s.made - s.correct}
-                          {sPct != null && <span className="text-gray-400"> ({sPct}%)</span>}
+                          {f.correct}-{f.made - f.correct}
+                          {fPct != null && <span className="text-gray-400"> ({fPct}%)</span>}
+                        </td>
+                        <td className="p-2 text-center text-gray-700">
+                          {u.correct}-{u.made - u.correct}
+                          {uPct != null && <span className="text-gray-400"> ({uPct}%)</span>}
                         </td>
                         <td className="p-2 text-center text-gray-700">
                           {t.correct}-{t.made - t.correct}
