@@ -54,12 +54,13 @@ export default async function StandingsPage() {
     PICKERS.map((p) => [
       p,
       {
+        spread: { made: 0, correct: 0 } as BetStat,
         favorite: { made: 0, correct: 0 } as BetStat,
         underdog: { made: 0, correct: 0 } as BetStat,
         total: { made: 0, correct: 0 } as BetStat,
       },
     ])
-  ) as Record<string, { favorite: BetStat; underdog: BetStat; total: BetStat }>;
+  ) as Record<string, { spread: BetStat; favorite: BetStat; underdog: BetStat; total: BetStat }>;
   for (const pick of graded) {
     if (pick.betType === "total") {
       const bucket = stats[pick.picker].total;
@@ -68,15 +69,20 @@ export default async function StandingsPage() {
       continue;
     }
 
-    // Spread pick: figure out whether the side taken was laying points
-    // (favorite) or getting points (underdog). Pick'em games (spread 0)
-    // have no favorite, so they're excluded from both buckets.
+    const spreadBucket = stats[pick.picker].spread;
+    spreadBucket.made++;
+    if (pick.isCorrect) spreadBucket.correct++;
+
+    // Sub-breakdown: was the side taken laying points (favorite) or
+    // getting points (underdog)? Pick'em games (spread 0) have no
+    // favorite, so they're left out of both sub-buckets but still count
+    // toward the combined spread record above.
     const spread = pick.game.spread;
     if (spread == null || spread === 0) continue;
     const tookFavorite = pick.side === "home" ? spread < 0 : spread > 0;
-    const bucket = tookFavorite ? stats[pick.picker].favorite : stats[pick.picker].underdog;
-    bucket.made++;
-    if (pick.isCorrect) bucket.correct++;
+    const subBucket = tookFavorite ? stats[pick.picker].favorite : stats[pick.picker].underdog;
+    subBucket.made++;
+    if (pick.isCorrect) subBucket.correct++;
   }
   const pct = (s: BetStat) => (s.made ? Math.round((s.correct / s.made) * 100) : null);
 
@@ -146,20 +152,21 @@ export default async function StandingsPage() {
               Accuracy split by bet type, across every graded pick this season.
             </p>
             <div className="overflow-x-auto">
-              <table className="w-full max-w-3xl border-collapse text-sm">
+              <table className="w-full max-w-2xl border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-300 text-left">
                     <th className="p-2">Picker</th>
-                    <th className="p-2 text-center">Favorite record</th>
-                    <th className="p-2 text-center">Underdog record</th>
+                    <th className="p-2 text-center">Spread record</th>
                     <th className="p-2 text-center">O/U record</th>
                   </tr>
                 </thead>
                 <tbody>
                   {PICKERS.map((p) => {
+                    const s = stats[p].spread;
                     const f = stats[p].favorite;
                     const u = stats[p].underdog;
                     const t = stats[p].total;
+                    const sPct = pct(s);
                     const fPct = pct(f);
                     const uPct = pct(u);
                     const tPct = pct(t);
@@ -167,12 +174,16 @@ export default async function StandingsPage() {
                       <tr key={p} className="border-b border-gray-100">
                         <td className="p-2 font-medium">{p}</td>
                         <td className="p-2 text-center text-gray-700">
-                          {f.correct}-{f.made - f.correct}
-                          {fPct != null && <span className="text-gray-400"> ({fPct}%)</span>}
-                        </td>
-                        <td className="p-2 text-center text-gray-700">
-                          {u.correct}-{u.made - u.correct}
-                          {uPct != null && <span className="text-gray-400"> ({uPct}%)</span>}
+                          <div>
+                            {s.correct}-{s.made - s.correct}
+                            {sPct != null && <span className="text-gray-400"> ({sPct}%)</span>}
+                          </div>
+                          <div className="text-[11px] text-gray-400">
+                            Fav {f.correct}-{f.made - f.correct}
+                            {fPct != null ? ` (${fPct}%)` : ""} · Dog {u.correct}-
+                            {u.made - u.correct}
+                            {uPct != null ? ` (${uPct}%)` : ""}
+                          </div>
                         </td>
                         <td className="p-2 text-center text-gray-700">
                           {t.correct}-{t.made - t.correct}
