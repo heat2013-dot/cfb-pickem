@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PICKERS } from "@/lib/pickers";
+import StandingsChart from "@/app/components/StandingsChart";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,17 @@ export default async function StandingsPage() {
   const weekBest = Object.fromEntries(
     weeks.map((w) => [w.id, highestOf(PICKERS.map((p) => weeklyPoints[p][w.id] ?? 0))])
   ) as Record<number, number>;
+
+  const cumulativeSeries = PICKERS.map((p) => {
+    let running = 0;
+    return {
+      picker: p,
+      values: weeks.map((w) => {
+        running += weeklyPoints[p][w.id] ?? 0;
+        return running;
+      }),
+    };
+  });
 
   // Fun stats: favorite vs. underdog and over/under accuracy per picker,
   // season-wide.
@@ -144,6 +156,15 @@ export default async function StandingsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          <div className="mb-10">
+            <h2 className="mb-2 text-lg font-semibold">Cumulative Points</h2>
+            <p className="mb-3 text-xs text-gray-500">Running season total by week.</p>
+            <StandingsChart
+              weekLabels={weeks.map((w) => w.weekNumber)}
+              series={cumulativeSeries}
+            />
           </div>
 
           <div>
