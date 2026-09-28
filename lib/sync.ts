@@ -171,6 +171,20 @@ async function upsertGamesAndPolls(
     gamesUpserted++;
   }
 
+  // Drop games that no longer qualify for the Top 25 (a team fell out of the
+  // rankings between syncs) -- but only if nobody has picked them yet. A
+  // picked game stays even if its team later drops out, so nobody loses a
+  // pick they already made.
+  if (!includeAllGames) {
+    await prisma.game.deleteMany({
+      where: {
+        weekId,
+        cfbdGameId: { notIn: top25Games.map((g) => g.id) },
+        picks: { none: {} },
+      },
+    });
+  }
+
   await prisma.pollRanking.deleteMany({ where: { weekId } });
   const rankingRows = displayPolls.flatMap((table) =>
     table.ranks.map((r) => {
