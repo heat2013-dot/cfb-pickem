@@ -346,6 +346,10 @@ export async function refreshWeek(weekId: number) {
   }
   const rankByTeam = new Map(top25.ranks.map((r) => [r.school, r.rank]));
 
+  if (week.pollSource !== top25.pollSource) {
+    await prisma.week.update({ where: { id: week.id }, data: { pollSource: top25.pollSource } });
+  }
+
   const [rawGames, lines, displayPolls, records, media] = await Promise.all([
     getGamesForWeek(week.season, queryWeekNumber, seasonType),
     getLinesForWeek(week.season, queryWeekNumber, seasonType),
