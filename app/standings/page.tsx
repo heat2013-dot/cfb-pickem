@@ -161,11 +161,6 @@ export default async function StandingsPage() {
                             }`}
                           >
                             {points}
-                            {isWeekLoser && (
-                              <div className="text-[9px] font-semibold uppercase leading-tight text-red-600">
-                                Loser of the Week
-                              </div>
-                            )}
                           </td>
                         );
                       })}
