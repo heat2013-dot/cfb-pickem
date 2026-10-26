@@ -89,6 +89,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
   const seasonBest = Math.max(0, ...PICKERS.map((p) => leaderboard[p] ?? 0));
   const weekBest = Math.max(0, ...PICKERS.map((p) => weeklyLeaderboard[p] ?? 0));
+  const weekComplete = games.length > 0 && games.every((g) => g.status === "final");
+  const weekWorst = Math.min(...PICKERS.map((p) => weeklyLeaderboard[p] ?? 0));
 
   const gameViews = games.map((game) => ({
     game,
@@ -183,18 +185,24 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                   {PICKERS.map((p) => {
                     const isLeader = weekBest > 0 && (weeklyLeaderboard[p] ?? 0) === weekBest;
+                    const isLoser =
+                      weekComplete && weekWorst < weekBest && (weeklyLeaderboard[p] ?? 0) === weekWorst;
                     return (
                       <div
                         key={p}
                         className={`rounded border p-2 text-center ${
                           isLeader
                             ? "border-amber-300 bg-amber-50"
-                            : "border-gray-200"
+                            : isLoser
+                              ? "border-red-300 bg-red-50"
+                              : "border-gray-200"
                         }`}
                       >
                         <div className="text-xs uppercase text-gray-500">{p}</div>
                         <div
-                          className={`text-lg font-semibold ${isLeader ? "text-amber-700" : ""}`}
+                          className={`text-lg font-semibold ${
+                            isLeader ? "text-amber-700" : isLoser ? "text-red-700" : ""
+                          }`}
                         >
                           {weeklyLeaderboard[p] ?? 0}
                         </div>

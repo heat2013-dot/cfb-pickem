@@ -38,6 +38,18 @@ export default async function StandingsPage() {
     weeks.map((w) => [w.id, highestOf(PICKERS.map((p) => weeklyPoints[p][w.id] ?? 0))])
   ) as Record<number, number>;
 
+  // Loser of the week only counts once every game that week is final, and
+  // only when there's a spread between best and worst (no all-way ties).
+  const weekComplete = Object.fromEntries(
+    weeks.map((w) => [w.id, w.games.length > 0 && w.games.every((g) => g.status === "final")])
+  ) as Record<number, boolean>;
+  const weekWorst = Object.fromEntries(
+    weeks.map((w) => [
+      w.id,
+      PICKERS.length ? Math.min(...PICKERS.map((p) => weeklyPoints[p][w.id] ?? 0)) : 0,
+    ])
+  ) as Record<number, number>;
+
   const cumulativeSeries = PICKERS.map((p) => {
     let running = 0;
     return {
@@ -133,11 +145,19 @@ export default async function StandingsPage() {
                       {weeks.map((w) => {
                         const points = weeklyPoints[p][w.id] ?? 0;
                         const isWeekLeader = weekBest[w.id] > 0 && points === weekBest[w.id];
+                        const isWeekLoser =
+                          weekComplete[w.id] &&
+                          weekWorst[w.id] < weekBest[w.id] &&
+                          points === weekWorst[w.id];
                         return (
                           <td
                             key={w.id}
                             className={`p-2 text-center ${
-                              isWeekLeader ? "rounded bg-amber-50 font-semibold text-amber-700" : ""
+                              isWeekLeader
+                                ? "rounded bg-amber-50 font-semibold text-amber-700"
+                                : isWeekLoser
+                                  ? "rounded bg-red-50 font-semibold text-red-700"
+                                  : ""
                             }`}
                           >
                             {points}
