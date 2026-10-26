@@ -206,6 +206,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                         >
                           {weeklyLeaderboard[p] ?? 0}
                         </div>
+                        {isLoser && (
+                          <div className="text-[10px] font-semibold uppercase leading-tight text-red-600">
+                            Loser of the Week
+                          </div>
+                        )}
                       </div>
                     );
                   })}
