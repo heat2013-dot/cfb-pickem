@@ -114,9 +114,14 @@ export default async function StandingsPage() {
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Season Standings</h1>
-        <Link href="/" className="text-sm text-blue-600 hover:underline">
-          ← Back to picks
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/map" className="text-sm text-blue-600 hover:underline">
+            Game Map
+          </Link>
+          <Link href="/" className="text-sm text-blue-600 hover:underline">
+            ← Back to picks
+          </Link>
+        </div>
       </div>
 
       {weeks.length === 0 ? (

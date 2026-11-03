@@ -31,6 +31,7 @@ interface RawCfbdGame {
   awayId: number;
   awayTeam: string;
   awayPoints: number | null;
+  venueId: number | null;
 }
 
 export interface CfbdGame {
@@ -43,6 +44,7 @@ export interface CfbdGame {
   awayId: number;
   awayTeam: string;
   awayScore: number | null;
+  venueId: number | null;
 }
 
 /** CFBD serves team logos from a predictable CDN path keyed by team id. */
@@ -239,7 +241,31 @@ export async function getGamesForWeek(
     awayId: g.awayId,
     awayTeam: g.awayTeam,
     awayScore: g.awayPoints,
+    venueId: g.venueId ?? null,
   }));
+}
+
+export interface Venue {
+  id: number;
+  name: string;
+  city: string | null;
+  state: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/** Every venue CFBD knows about (stadium name, city, coordinates), keyed by venue id. */
+export async function getVenues(): Promise<Map<number, Venue>> {
+  const raw = await cfbdFetch<Venue[]>("/venues", {});
+  return new Map(raw.map((v) => [v.id, v]));
+}
+
+/** Maps every FBS game in a regular season to its venue id (used to backfill old games). */
+export async function getSeasonGameVenueIds(year: number): Promise<Map<number, number>> {
+  const raw = await cfbdFetch<RawCfbdGame[]>("/games", { year, classification: "fbs" });
+  const byGame = new Map<number, number>();
+  for (const g of raw) if (g.venueId != null) byGame.set(g.id, g.venueId);
+  return byGame;
 }
 
 interface RawGameMedia {

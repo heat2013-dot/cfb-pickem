@@ -56,6 +56,12 @@ model Game {
   status       String   @default("scheduled")
   homeScore    Int?
   awayScore    Int?
+  venueId      Int?
+  venueName    String?
+  venueCity    String?
+  venueState   String?
+  latitude     Float?
+  longitude    Float?
   updatedAt    DateTime @updatedAt
   picks        Pick[]
 }

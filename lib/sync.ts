@@ -7,11 +7,14 @@ import {
   getDisplayRankings,
   getRecords,
   getMediaForWeek,
+  getVenues,
+  getSeasonGameVenueIds,
   pickBestLine,
   logoUrl,
   type SeasonType,
   type CfbdGame,
   type CfbdLine,
+  type Venue,
   type PollTable,
   type TeamRecord,
 } from "@/lib/cfbd";
@@ -103,6 +106,19 @@ export function gamesForWeek(
   return buckets.find((b) => b.weekNumber === weekNumber)?.games ?? rawGames;
 }
 
+function venueFields(venueId: number | null, venues: Map<number, Venue>) {
+  const v = venueId != null ? venues.get(venueId) : undefined;
+  if (!v) return {};
+  return {
+    venueId: v.id,
+    venueName: v.name,
+    venueCity: v.city,
+    venueState: v.state,
+    latitude: v.latitude,
+    longitude: v.longitude,
+  };
+}
+
 /**
  * Upserts the Top 25 matchups (with lines/broadcast) and the poll sidebar
  * tables for one week. Shared by the full weekly sync and the manual
@@ -116,9 +132,19 @@ async function upsertGamesAndPolls(
   media: Map<number, string>,
   displayPolls: PollTable[],
   records: Map<string, TeamRecord>,
-  options: { includeAllGames?: boolean; picksLocked?: boolean; now?: number } = {}
+  options: {
+    includeAllGames?: boolean;
+    picksLocked?: boolean;
+    now?: number;
+    venues?: Map<number, Venue>;
+  } = {}
 ): Promise<number> {
-  const { includeAllGames = false, picksLocked = false, now = Date.now() } = options;
+  const {
+    includeAllGames = false,
+    picksLocked = false,
+    now = Date.now(),
+    venues = new Map<number, Venue>(),
+  } = options;
 
   // Week 0's real slate is tiny (a handful of games league-wide), so it's
   // shown in full rather than filtered down to just ranked matchups.
@@ -152,6 +178,7 @@ async function upsertGamesAndPolls(
         status: g.completed ? "final" : "scheduled",
         homeScore: g.homeScore,
         awayScore: g.awayScore,
+        ...venueFields(g.venueId, venues),
       },
       update: {
         weekId,
@@ -161,6 +188,7 @@ async function upsertGamesAndPolls(
         homeRank: rankByTeam.get(g.homeTeam) ?? null,
         awayRank: rankByTeam.get(g.awayTeam) ?? null,
         broadcast: media.get(g.id) ?? null,
+        ...venueFields(g.venueId, venues),
         // Don't clobber an existing line with a null if the odds feed hasn't
         // posted yet, and don't move it at all once frozen.
         ...(bestLine && !freezeOdds
@@ -226,12 +254,13 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
 
   const rankByTeam = new Map(top25.ranks.map((r) => [r.school, r.rank]));
 
-  const [games, lines, displayPolls, records, media] = await Promise.all([
+  const [games, lines, displayPolls, records, media, venues] = await Promise.all([
     getGamesForWeek(season, weekNumber, seasonType),
     getLinesForWeek(season, weekNumber, seasonType),
     getDisplayRankings(season, weekNumber, seasonType),
     getRecords(season),
     getMediaForWeek(season, weekNumber, seasonType),
+    getVenues(),
   ]);
 
   const linesByGameId = new Map(lines.map((l) => [l.id, l.lines]));
@@ -257,7 +286,7 @@ export async function syncWeek(season: number, weekNumber: number, seasonType: S
       media,
       displayPolls,
       records,
-      { includeAllGames: bucket.weekNumber === 0, picksLocked: week.picksLocked }
+      { includeAllGames: bucket.weekNumber === 0, picksLocked: week.picksLocked, venues }
     );
 
     syncedWeeks.push({ weekNumber: bucket.weekNumber, gamesUpserted });
@@ -350,12 +379,13 @@ export async function refreshWeek(weekId: number) {
     await prisma.week.update({ where: { id: week.id }, data: { pollSource: top25.pollSource } });
   }
 
-  const [rawGames, lines, displayPolls, records, media] = await Promise.all([
+  const [rawGames, lines, displayPolls, records, media, venues] = await Promise.all([
     getGamesForWeek(week.season, queryWeekNumber, seasonType),
     getLinesForWeek(week.season, queryWeekNumber, seasonType),
     getDisplayRankings(week.season, queryWeekNumber, seasonType),
     getRecords(week.season),
     getMediaForWeek(week.season, queryWeekNumber, seasonType),
+    getVenues(),
   ]);
   const linesByGameId = new Map(lines.map((l) => [l.id, l.lines]));
 
@@ -369,8 +399,39 @@ export async function refreshWeek(weekId: number) {
     media,
     displayPolls,
     records,
-    { includeAllGames: week.weekNumber === 0, picksLocked: week.picksLocked }
+    { includeAllGames: week.weekNumber === 0, picksLocked: week.picksLocked, venues }
   );
 
   return { refreshed: true, gamesUpserted };
+}
+
+/**
+ * Fills in venue/coordinates for games stored before venues were tracked.
+ * Costs two CFBD calls per season that has any such games, and nothing once
+ * every game has a venue, so it's safe to run on every Refresh.
+ */
+export async function backfillVenues(): Promise<number> {
+  const missing = await prisma.game.findMany({
+    where: { venueId: null },
+    select: { id: true, cfbdGameId: true, week: { select: { season: true } } },
+  });
+  if (missing.length === 0) return 0;
+
+  const venues = await getVenues();
+  const seasons = [...new Set(missing.map((g) => g.week.season))];
+  const venueIdByGame = new Map<number, number>();
+  for (const season of seasons) {
+    for (const [gameId, venueId] of await getSeasonGameVenueIds(season)) {
+      venueIdByGame.set(gameId, venueId);
+    }
+  }
+
+  let updated = 0;
+  for (const g of missing) {
+    const fields = venueFields(venueIdByGame.get(g.cfbdGameId) ?? null, venues);
+    if (!fields.venueId) continue;
+    await prisma.game.update({ where: { id: g.id }, data: fields });
+    updated++;
+  }
+  return updated;
 }
