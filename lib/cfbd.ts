@@ -130,10 +130,15 @@ interface RankingsResponse {
   polls: { poll: string; ranks: PollRank[] }[];
 }
 
+// First CFP rankings come out in week 10; from there on (and in the
+// postseason) the CFP rankings drive the matchups instead of the AP poll.
+const CFP_START_WEEK = 10;
+
 /**
- * Returns the Top 25 for a week, sourced from the AP Top 25 only. Returns
- * null if the AP poll hasn't been published for that week yet -- callers
- * treat that as "no poll yet" rather than falling back to another poll.
+ * Returns the Top 25 for a week: the CFP rankings from week 10 onward and
+ * through the postseason, the AP Top 25 before that. Never falls back to
+ * another poll -- returns null if the required poll hasn't been published
+ * yet, which callers treat as "no poll yet".
  */
 export async function getTop25(
   year: number,
@@ -146,6 +151,11 @@ export async function getTop25(
     seasonType,
   });
   const polls = data[0]?.polls ?? [];
+
+  if (seasonType === "postseason" || week >= CFP_START_WEEK) {
+    const cfp = polls.find((p) => p.poll === "Playoff Committee Rankings");
+    return cfp ? { pollSource: "CFP Rankings", ranks: cfp.ranks.slice(0, 25) } : null;
+  }
 
   const ap = polls.find((p) => p.poll === "AP Top 25");
   if (ap) return { pollSource: "AP Top 25", ranks: ap.ranks.slice(0, 25) };

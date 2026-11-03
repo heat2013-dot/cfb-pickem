@@ -14,7 +14,7 @@ type RankingRow = {
   previousRank: number | null;
 };
 
-const POLL_ORDER = ["AP Top 25", "Playoff Committee Rankings", "Coaches Poll"];
+const POLL_ORDER = ["Playoff Committee Rankings", "AP Top 25", "Coaches Poll"];
 const POLL_LABELS: Record<string, string> = {
   "AP Top 25": "AP Poll",
   "Playoff Committee Rankings": "CFP Poll",
