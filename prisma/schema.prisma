@@ -64,6 +64,7 @@ model Game {
   longitude    Float?
   updatedAt    DateTime @updatedAt
   picks        Pick[]
+  modelPick    ModelPick?
 }
 
 model Pick {
@@ -78,4 +79,26 @@ model Pick {
   updatedAt DateTime @updatedAt
 
   @@unique([gameId, picker])
+}
+
+model ModelPick {
+  id          Int      @id @default(autoincrement())
+  gameId      Int      @unique
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  betType     String
+  side        String
+  probability Float
+  tier        String
+  lineSpread  Float?
+  lineTotal   Float?
+  edgeSpread  Float?
+  edgeTotal   Float?
+  pSpread     Float?
+  pTotal      Float?
+  projHome    Float?
+  projAway    Float?
+  isCorrect   Boolean?
+  backfilled  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

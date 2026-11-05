@@ -71,7 +71,7 @@ function apiKey(): string {
   return key;
 }
 
-async function cfbdFetch<T>(
+export async function cfbdFetch<T>(
   path: string,
   params: Record<string, string | number>
 ): Promise<T> {

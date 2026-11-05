@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { pullResults } from "@/lib/refresh";
 import { currentWeekIsStale, syncCurrentWeek } from "@/lib/sync";
+import { runModel } from "@/lib/model/run";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +27,12 @@ export async function GET(request: NextRequest) {
     // Wednesday's full sync. Cheap no-op on days it's not due yet.
     const advanced = (await currentWeekIsStale()) ? await syncCurrentWeek() : null;
 
+    const current = await prisma.week.findFirst({ where: { isCurrent: true } });
+    const model = await runModel([week.id, ...(current && current.id !== week.id ? [current.id] : [])]);
+
     revalidatePath("/");
-    return NextResponse.json({ ...result, advanced });
+    revalidatePath("/model");
+    return NextResponse.json({ ...result, advanced, model });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },

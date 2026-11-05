@@ -118,6 +118,9 @@ export default async function StandingsPage() {
           <Link href="/map" className="text-sm text-blue-600 hover:underline">
             Game Map
           </Link>
+          <Link href="/model" className="text-sm text-blue-600 hover:underline">
+            Model Picks
+          </Link>
           <Link href="/" className="text-sm text-blue-600 hover:underline">
             ← Back to picks
           </Link>

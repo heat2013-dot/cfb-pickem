@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getGamesForWeek, type SeasonType } from "@/lib/cfbd";
 import { gradePick } from "@/lib/grade";
 import { resolveCfbdQueryWeek, gamesForWeek, refreshWeek, advanceToNextWeek, backfillVenues } from "@/lib/sync";
+import { runModel } from "@/lib/model/run";
 
 /**
  * Pulls the latest scores for one week's games, marks any that have gone
@@ -68,5 +69,12 @@ export async function refreshAll(weekId: number) {
   const venuesBackfilled = await backfillVenues().catch(() => 0);
   const advanced = week.isCurrent ? await advanceToNextWeek(weekId) : null;
 
-  return { refreshed: true, odds, results, advanced, venuesBackfilled };
+  const modelWeekIds = [weekId];
+  if (advanced?.advanced) {
+    const current = await prisma.week.findFirst({ where: { isCurrent: true } });
+    if (current) modelWeekIds.push(current.id);
+  }
+  const model = await runModel(modelWeekIds);
+
+  return { refreshed: true, odds, results, advanced, venuesBackfilled, model };
 }

@@ -144,6 +144,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           >
             Map
           </Link>
+          <Link
+            href="/model"
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Model
+          </Link>
         </div>
       </header>
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncCurrentWeek, syncWeek } from "@/lib/sync";
+import { runModel } from "@/lib/model/run";
+import { prisma } from "@/lib/prisma";
 import type { SeasonType } from "@/lib/cfbd";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +24,10 @@ export async function GET(request: NextRequest) {
         ? await syncWeek(Number(season), Number(week), seasonType ?? "regular")
         : await syncCurrentWeek();
 
-    return NextResponse.json(result);
+    const current = await prisma.week.findFirst({ where: { isCurrent: true } });
+    const model = await runModel(current ? [current.id] : []);
+
+    return NextResponse.json({ ...result, model });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },
