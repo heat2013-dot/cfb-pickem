@@ -1,12 +1,26 @@
 import { prisma } from "@/lib/prisma";
 import { gradePick } from "@/lib/grade";
 import { fetchModelSeasonData } from "@/lib/model/data";
-import { predictGames, type ModelParams, type Prediction, type Priors } from "@/lib/model/engine";
+import { createModel, refit, type ModelParams, type Prediction, type Priors, type SuffStats, type TrainingRow } from "@/lib/model/engine";
 import priorsFile from "@/lib/model/priors2026.json";
 import paramsFile from "@/lib/model/params.json";
+import suffFile from "@/lib/model/suffstats.json";
 
 const priors = priorsFile as unknown as Priors;
 const params = paramsFile as unknown as ModelParams;
+const stats = suffFile as unknown as { total: SuffStats; spread: SuffStats };
+
+/** Refits both regressions on this season's completed games, on top of the stored history. */
+function refitParams(rows: TrainingRow[]): ModelParams {
+  if (!rows.length) return params;
+  const build = (s: SuffStats, key: "over" | "cover", alpha: number) =>
+    refit(s, rows.map((r) => ({ x: s.feats.map((k) => r.features[k] ?? 0), y: r[key] })), params.in_season_weight, alpha);
+  return {
+    ...params,
+    total: build(stats.total, "over", params.alpha.total),
+    spread: build(stats.spread, "cover", params.alpha.spread),
+  };
+}
 
 export const MODEL_PRIOR_SEASON = priors.season;
 
@@ -92,9 +106,19 @@ export async function generateModelPicks(weekIds: number[]) {
       }
     }
 
-    const preds = predictGames({ ...data, priors, params }, targets);
+    // Unstarted games: use every result up to right now and a model refit on this season so far.
+    // Games already played (backfill) stay point-in-time with the original, pre-season model.
+    const model = createModel({ ...data, priors, params });
+    const seasonRows = model.trainingRows();
+    const liveParams = refitParams(seasonRows);
+    const liveTargets = targets.filter((t) => !gameByCfbd.get(t.id)!.backfilled);
+    const oldTargets = targets.filter((t) => gameByCfbd.get(t.id)!.backfilled);
+    const preds = [
+      ...model.predict(liveTargets, { now, params: liveParams }).map((pred) => ({ pred, seasonGames: seasonRows.length })),
+      ...model.predict(oldTargets).map((pred) => ({ pred, seasonGames: 0 })),
+    ];
     const targetById = new Map(targets.map((t) => [t.id, t]));
-    for (const pred of preds) {
+    for (const { pred, seasonGames } of preds) {
       const chosen = choose(pred);
       const meta = gameByCfbd.get(pred.id)!;
       const t = targetById.get(pred.id)!;
@@ -116,6 +140,7 @@ export async function generateModelPicks(weekIds: number[]) {
         projHome: (totalEst + marginEst) / 2,
         projAway: (totalEst - marginEst) / 2,
         isCorrect: null,
+        seasonGames,
       };
       await prisma.modelPick.upsert({
         where: { gameId: meta.dbId },

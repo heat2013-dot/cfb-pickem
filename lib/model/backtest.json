@@ -1,101 +1,102 @@
 {
+ "in_season_updating": true,
  "pooled": {
   "total": [
-   0.5306,
-   4885
+   0.5253,
+   5010
   ],
   "spread": [
-   0.514,
-   4852
+   0.5223,
+   4976
   ]
  },
  "per_season": {
   "2021": {
    "total": [
-    0.5493,
+    0.5565,
     841
    ],
    "spread": [
-    0.5174,
+    0.5222,
     835
    ]
   },
   "2022": {
    "total": [
-    0.5161,
+    0.5066,
     839
    ],
    "spread": [
-    0.5078,
+    0.5364,
     837
    ]
   },
   "2023": {
    "total": [
-    0.5409,
+    0.5315,
     856
    ],
    "spread": [
-    0.5171,
+    0.5183,
     849
    ]
   },
   "2024": {
    "total": [
-    0.5344,
+    0.5368,
     842
    ],
    "spread": [
-    0.5125,
+    0.5161,
     841
    ]
   },
   "2025": {
    "total": [
-    0.5408,
+    0.5374,
     882
    ],
    "spread": [
-    0.5006,
+    0.5178,
     871
    ]
   },
   "2026": {
    "total": [
-    0.4912,
-    625
+    0.4773,
+    750
    ],
    "spread": [
-    0.5347,
-    619
+    0.5236,
+    743
    ]
   }
  },
- "baseline_over_rate": 0.5017,
- "baseline_home_cover_rate": 0.5115,
- "baseline_favorite_cover_rate": 0.4996,
+ "baseline_over_rate": 0.4994,
+ "baseline_home_cover_rate": 0.5092,
+ "baseline_favorite_cover_rate": 0.4998,
+ "tier_cutoffs": {
+  "medium": 1.1502457427463477,
+  "high": 2.0550134274883427
+ },
  "tiers_total": {
   "high": [
-   0.5656,
-   976
+   0.556,
+   1000
   ],
   "medium": [
-   0.5297,
-   1467
+   0.5166,
+   1506
   ],
   "low": [
-   0.5172,
-   2442
+   0.5184,
+   2504
   ]
  },
- "tier_cutoffs": {
-  "medium": 1.156435535034963,
-  "high": 2.0989150307598785
- },
  "chosen_bet_accuracy": [
-  0.5303,
-  4878
+  0.532,
+  4991
  ],
- "share_spread_picks": 0.1874,
- "n_games_pooled": 4936
+ "share_spread_picks": 0.4861,
+ "n_games_pooled": 5061
 }

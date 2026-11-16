@@ -86,6 +86,14 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
     return { name: p, ...tally(rows) };
   });
 
+  const lastLive = selectedWeek
+    ? await prisma.modelPick.findFirst({
+      where: { backfilled: false, game: { week: { season: selectedWeek.season } } },
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true, seasonGames: true },
+    })
+    : null;
+
   const weekPicks = games.flatMap((g) => (g.modelPick?.isCorrect != null ? [g.modelPick] : []));
   const weekRecord = tally(weekPicks);
 
@@ -131,6 +139,23 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
         <p className="text-gray-500">No week has been synced yet.</p>
       ) : (
         <>
+          {lastLive && (
+            <p className="mb-4 text-xs text-gray-500">
+              Last model update{" "}
+              {lastLive.updatedAt.toLocaleString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                timeZone: "America/Chicago",
+                timeZoneName: "short",
+              })}
+              : refit on 2019–2025 plus {lastLive.seasonGames} {selectedWeek.season} games, with team ratings
+              built from every result through that moment.
+            </p>
+          )}
+
           <section className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Tile label={`Week ${selectedWeek.weekNumber}`} value={`${weekRecord.w}-${weekRecord.n - weekRecord.w}`} sub={pct(weekRecord.w, weekRecord.n)} />
             <Tile label="Season (all picks)" value={`${all.w}-${all.n - all.w}`} sub={pct(all.w, all.n)} />
@@ -285,7 +310,9 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
               recruiting talent and returning production. It then weighs that against the sportsbook line, adding
               factors like the total&apos;s tendency to regress toward the average, each team&apos;s history against the
               over/under, pace of play, and forecast weather. Each game gets one pick, whichever bet (spread or
-              over/under) it rates as more likely to win.
+              over/under) it rates as more likely to win. At every refresh it rebuilds team strength from all results
+              to date and re-learns how much weight each factor deserves using this season&apos;s games alongside the
+              previous ones.
             </p>
             <p className="mb-2">
               Weeks that happened before the model existed were run after the fact, using only information available
@@ -295,7 +322,8 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
 
             <h3 className="mb-1 mt-4 font-semibold">Back-test: how well would it have done?</h3>
             <p className="mb-2">
-              Each season below was predicted using only seasons before it (nothing about the future leaked in).
+              Each game below was predicted using only what was known before it — earlier seasons plus, for the current
+              season, the weeks already played (nothing about the future leaked in).
               Sportsbook lines are very efficient — a coin flip wins 50%, and you need about 52.4% to break even at
               standard odds — so even a good model wins only a little more than half the time.
             </p>
@@ -348,7 +376,7 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
             </ul>
             <p className="text-xs text-gray-500">
               Be skeptical: the model&apos;s settings were tuned on 2021–2025, so those years flatter it. 2026 was never used
-              in building it, and its first nine weeks there came in at {pctRaw(bt.per_season["2026"].total[0])} on over/unders and{" "}
+              to pick the model&apos;s design, and so far this season it has come in at {pctRaw(bt.per_season["2026"].total[0])} on over/unders and{" "}
               {pctRaw(bt.per_season["2026"].spread[0])} against the spread — about what you&apos;d expect from a small, noisy
               edge. Treat these picks as one more opinion, not a lock.
             </p>

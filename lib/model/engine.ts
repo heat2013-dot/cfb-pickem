@@ -64,6 +64,8 @@ export interface ModelParams {
   calibration: Record<"total" | "spread", { intercept: number; slope: number }>;
   tier_cutoffs: { medium: number; high: number };
   weather_median: { temp: number; wind: number; precip: number };
+  alpha: { total: number; spread: number };
+  in_season_weight: number;
   hyper: { lam_pw: number; lam_po: number; lam_x: number; lam_s: number; lam_h: number; cap: number; pace_k: number };
 }
 
@@ -237,7 +239,7 @@ export interface ModelInputs {
   params: ModelParams;
 }
 
-export function predictGames(inp: ModelInputs, targets: TargetGame[]): Prediction[] {
+export function createModel(inp: ModelInputs) {
   const { priors, params } = inp;
   const teams = [...[...priors.fbs].sort(), "FCS"];
   const T = teams.length;
@@ -366,11 +368,9 @@ export function predictGames(inp: ModelInputs, targets: TargetGame[]): Predictio
     return 1 / (1 + Math.exp(-(c.intercept + c.slope * Math.abs(edge))));
   };
 
-  const out: Prediction[] = [];
-  for (const t of targets) {
+  /** All model features for one game, given the rating state it should be predicted from. */
+  function featuresFor(t: TargetGame, st: RatingState) {
     const row = gamesById.get(t.id);
-    const cutoff = row && row.seasonType === "regular" ? (weekStart.get(row.week) ?? Infinity) : Infinity;
-    const st = stateAt(cutoff);
     const homeKey = keyOf(t.homeName);
     const awayKey = keyOf(t.awayName);
     const h = idxOf(homeKey);
@@ -413,29 +413,148 @@ export function predictGames(inp: ModelInputs, targets: TargetGame[]): Predictio
     f.cold = temp < 40 && indoors === 0 ? 1 : 0;
     f.rain = precip > 0.02 && indoors === 0 ? 1 : 0;
 
-    let edgeSpread: number | null = null;
-    let edgeTotal: number | null = null;
     if (t.spread != null) {
       const M = -t.spread;
       f.e_pw = pwM - M;
       f.e_po = expH - expA - M;
-      edgeSpread = linear(params.spread, f);
     }
     if (t.overUnder != null) {
       f.e_pt = expH + expA - t.overUnder;
       f.ou_c = t.overUnder - 55;
-      edgeTotal = linear(params.total, f);
     }
-    out.push({
-      id: t.id,
-      edgeSpread,
-      edgeTotal,
-      pSpread: edgeSpread == null ? null : prob("spread", edgeSpread),
-      pTotal: edgeTotal == null ? null : prob("total", edgeTotal),
-      features: { ...f, po_t: expH + expA, po_m: expH - expA, pw_m: pwM },
-    });
+    return { f, poTotal: expH + expA, poMargin: expH - expA, pwMargin: pwM };
   }
-  return out;
+
+  /**
+   * Predicts each target. Games that have not started use every result available
+   * at `opts.now`; everything else is predicted as of its week's first kickoff.
+   * `opts.params` lets callers substitute a model refit on this season's games.
+   */
+  function predict(targets: TargetGame[], opts: { now?: number; params?: ModelParams } = {}): Prediction[] {
+    const use = opts.params ?? params;
+    const out: Prediction[] = [];
+    for (const t of targets) {
+      const row = gamesById.get(t.id);
+      let cutoff = row && row.seasonType === "regular" ? (weekStart.get(row.week) ?? Infinity) : Infinity;
+      if (opts.now != null && t.startDate > opts.now) cutoff = opts.now;
+      const { f, poTotal, poMargin, pwMargin } = featuresFor(t, stateAt(cutoff));
+      const edgeSpread = t.spread != null ? linear(use.spread, f) : null;
+      const edgeTotal = t.overUnder != null ? linear(use.total, f) : null;
+      out.push({
+        id: t.id,
+        edgeSpread,
+        edgeTotal,
+        pSpread: edgeSpread == null ? null : prob("spread", edgeSpread),
+        pTotal: edgeTotal == null ? null : prob("total", edgeTotal),
+        features: { ...f, po_t: poTotal, po_m: poMargin, pw_m: pwMargin },
+      });
+    }
+    return out;
+  }
+
+  /**
+   * One row per completed regular-season game that has a posted line: its features
+   * as of that week's first kickoff plus how it actually turned out. These are the
+   * in-season examples used to refit the model.
+   */
+  function trainingRows(): TrainingRow[] {
+    const rows: TrainingRow[] = [];
+    for (const g of regular) {
+      if (!g.completed || g.homePoints == null || g.awayPoints == null) continue;
+      const ln = inp.lines.get(g.id);
+      if (!ln || ln.spread == null || ln.overUnder == null) continue;
+      const t: TargetGame = {
+        id: g.id,
+        homeName: g.homeName,
+        awayName: g.awayName,
+        startDate: g.date,
+        spread: ln.spread,
+        overUnder: ln.overUnder,
+        neutral: g.neutral,
+      };
+      const { f } = featuresFor(t, stateAt(weekStart.get(g.week) ?? Infinity));
+      rows.push({
+        features: f,
+        cover: g.homePoints - g.awayPoints + ln.spread,
+        over: g.homePoints + g.awayPoints - ln.overUnder,
+      });
+    }
+    return rows;
+  }
+
+  return { predict, trainingRows };
+}
+
+export function predictGames(inp: ModelInputs, targets: TargetGame[]): Prediction[] {
+  return createModel(inp).predict(targets);
+}
+
+export interface TrainingRow {
+  features: Record<string, number>;
+  cover: number; // actual home margin minus the market's expected margin
+  over: number; // actual total minus the line
+}
+
+/** Running sums for a ridge regression, so past seasons can be folded in without keeping every game. */
+export interface SuffStats {
+  feats: string[];
+  n: number;
+  sumX: number[];
+  sumXX: number[]; // flattened p x p
+  sumY: number;
+  sumYY: number;
+  sumXY: number[];
+}
+
+/**
+ * Refits a ridge model from stored historical sums plus new rows (each counted
+ * `weight` times), standardizing and shrinking exactly as the original fit did.
+ */
+export function refit(stats: SuffStats, rows: { x: number[]; y: number }[], weight: number, alpha: number): LinearModel {
+  const p = stats.feats.length;
+  let Sw = stats.n;
+  const sx = stats.sumX.slice();
+  const sxx = stats.sumXX.slice();
+  let sy = stats.sumY;
+  let syy = stats.sumYY;
+  const sxy = stats.sumXY.slice();
+  for (const r of rows) {
+    Sw += weight;
+    sy += weight * r.y;
+    syy += weight * r.y * r.y;
+    for (let i = 0; i < p; i++) {
+      sx[i] += weight * r.x[i];
+      sxy[i] += weight * r.x[i] * r.y;
+      for (let j = 0; j < p; j++) sxx[i * p + j] += weight * r.x[i] * r.x[j];
+    }
+  }
+  const mu = sx.map((v) => v / Sw);
+  const sd = mu.map((m, i) => Math.sqrt(Math.max(sxx[i * p + i] / Sw - m * m, 0)) + 1e-9);
+  const ybar = sy / Sw;
+  const A = new Float64Array(p * p);
+  const b = new Float64Array(p);
+  for (let i = 0; i < p; i++) {
+    b[i] = (sxy[i] - mu[i] * sy) / sd[i];
+    for (let j = 0; j < p; j++) A[i * p + j] = (sxx[i * p + j] - Sw * mu[i] * mu[j]) / (sd[i] * sd[j]);
+  }
+  const Areg = A.slice();
+  for (let i = 0; i < p; i++) Areg[i * p + i] += alpha;
+  const beta = solveSPD(Areg, b, p);
+  let quad = 0;
+  let lin = 0;
+  for (let i = 0; i < p; i++) {
+    lin += beta[i] * b[i];
+    for (let j = 0; j < p; j++) quad += beta[i] * A[i * p + j] * beta[j];
+  }
+  const sse = syy - Sw * ybar * ybar - 2 * lin + quad;
+  return {
+    feats: stats.feats,
+    mu,
+    sd,
+    coef: Array.from(beta),
+    intercept: ybar,
+    resid_sd: Math.sqrt(Math.max(sse, 0) / Sw),
+  };
 }
 
 export type Tier = "high" | "medium" | "low";

@@ -77,17 +77,17 @@
  },
  "calibration": {
   "total": {
-   "intercept": 0.027563482084905118,
-   "slope": 0.07182441497331264
+   "intercept": 0.010130559213473028,
+   "slope": 0.07032836106644198
   },
   "spread": {
-   "intercept": 0.006850038375783981,
-   "slope": 0.12815253331186327
+   "intercept": 0.10436858336001399,
+   "slope": -0.04217386844092508
   }
  },
  "tier_cutoffs": {
-  "medium": 1.156435535034963,
-  "high": 2.0989150307598785
+  "medium": 1.1502457427463477,
+  "high": 2.0550134274883427
  },
  "weather_median": {
   "temp": 69.1,
@@ -103,5 +103,10 @@
   "cap": 35,
   "pace_k": 4.0
  },
- "trained_on": "2019, 2021-2025 regular seasons"
+ "trained_on": "2019, 2021-2025 regular seasons; refit on the current season at every run",
+ "alpha": {
+  "total": 300.0,
+  "spread": 500.0
+ },
+ "in_season_weight": 1.0
 }
