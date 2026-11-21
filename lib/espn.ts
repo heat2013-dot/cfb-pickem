@@ -19,19 +19,20 @@ interface RawEvent {
   competitions: { competitors: { homeAway: string; score?: string }[] }[];
 }
 
-const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10).replace(/-/g, "");
+// ESPN groups games by Eastern-time calendar day.
+const etDay = (ms: number) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(ms)).replace(/-/g, "");
 
 // Kept per server instance so a burst of requests shares one ESPN fetch.
 const cache = new Map<string, { at: number; data: Map<number, LiveInfo> }>();
 const TTL_MS = 20_000;
 
-/** All FBS games between the two instants (ESPN groups days by Eastern time, hence the buffer). */
-export async function getLiveScores(fromMs: number, toMs: number): Promise<Map<number, LiveInfo>> {
-  const dates = `${ymd(fromMs - 86_400_000)}-${ymd(toMs + 86_400_000)}`;
-  const hit = cache.get(dates);
+/** One day's FBS scoreboard (ESPN's multi-day range queries are rejected, so it's a request per day). */
+async function fetchDay(date: string): Promise<Map<number, LiveInfo>> {
+  const hit = cache.get(date);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.data;
 
-  const res = await fetch(`${SCOREBOARD}?dates=${dates}&groups=80&limit=500`, {
+  const res = await fetch(`${SCOREBOARD}?dates=${date}&groups=80&limit=500`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
   });
@@ -52,6 +53,15 @@ export async function getLiveScores(fromMs: number, toMs: number): Promise<Map<n
       awayScore: away?.score != null ? Number(away.score) : null,
     });
   }
-  cache.set(dates, { at: Date.now(), data });
+  cache.set(date, { at: Date.now(), data });
   return data;
+}
+
+/** Live info for every FBS game on the Eastern-time days that the given kickoff times fall on. */
+export async function getLiveScores(kickoffs: number[]): Promise<Map<number, LiveInfo>> {
+  const days = [...new Set(kickoffs.map(etDay))];
+  const maps = await Promise.all(days.map(fetchDay));
+  const merged = new Map<number, LiveInfo>();
+  for (const m of maps) for (const [id, info] of m) merged.set(id, info);
+  return merged;
 }

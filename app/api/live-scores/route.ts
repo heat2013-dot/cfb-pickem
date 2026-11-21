@@ -37,8 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const times = active.map((g) => g.startDate.getTime());
-    const live = await getLiveScores(Math.min(...times), Math.max(...times));
+    const live = await getLiveScores(active.map((g) => g.startDate.getTime()));
     const scores: Record<number, LiveInfo> = {};
     for (const g of active) {
       const info = live.get(g.cfbdGameId);
