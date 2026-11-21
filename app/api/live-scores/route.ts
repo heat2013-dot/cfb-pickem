@@ -45,7 +45,11 @@ export async function GET(request: NextRequest) {
       if (info && info.state !== "pre") scores[g.id] = info;
     }
     return NextResponse.json({ scores, pollMs: 30_000 }, { headers: cache });
-  } catch {
-    return NextResponse.json({ scores: {}, pollMs: 60_000 }, { headers: cache });
+  } catch (err) {
+    console.error("live scores failed", err);
+    return NextResponse.json(
+      { scores: {}, pollMs: 60_000, error: err instanceof Error ? err.message : "failed" },
+      { headers: cache }
+    );
   }
 }
