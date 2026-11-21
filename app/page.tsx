@@ -10,6 +10,7 @@ import LockPicksButton from "@/app/components/LockPicksButton";
 import WeekSelector from "@/app/components/WeekSelector";
 import PollTables from "@/app/components/PollTables";
 import PrintButton from "@/app/components/PrintButton";
+import { LiveScoresProvider, LiveResult } from "@/app/components/LiveScores";
 
 export const dynamic = "force-dynamic";
 
@@ -239,7 +240,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           ) : games.length === 0 ? (
             <p className="text-gray-500">No Top 25 matchups found for this week.</p>
           ) : (
-            <>
+            <LiveScoresProvider weekId={selectedWeek.id}>
               <div id="picks-cards" className="space-y-3 sm:hidden">
                 {gameViews.map(({ game, locked }) => (
                   <GameCard key={game.id} game={game} locked={locked} />
@@ -331,13 +332,20 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                           {game.overUnder != null ? game.overUnder : "–"}
                         </td>
                         <td className="border border-gray-200 p-2">
-                          {game.status === "final" ? (
-                            <span className="font-semibold text-gray-700">
-                              {game.awayTeam} {game.awayScore} – {game.homeTeam} {game.homeScore}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-400">–</span>
-                          )}
+                          <LiveResult
+                            gameId={game.id}
+                            isFinal={game.status === "final"}
+                            awayTeam={game.awayTeam}
+                            homeTeam={game.homeTeam}
+                          >
+                            {game.status === "final" ? (
+                              <span className="font-semibold text-gray-700">
+                                {game.awayTeam} {game.awayScore} – {game.homeTeam} {game.homeScore}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400">–</span>
+                            )}
+                          </LiveResult>
                         </td>
                         {PICKERS.map((picker) => {
                           const currentPick = game.picks.find((p) => p.picker === picker) ?? null;
@@ -365,7 +373,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   </tbody>
                 </table>
               </div>
-            </>
+            </LiveScoresProvider>
           )}
         </div>
       </div>

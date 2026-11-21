@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PICKERS } from "@/lib/pickers";
 import { formatRank, formatSpread } from "@/lib/format";
 import WeekSelector from "@/app/components/WeekSelector";
+import { LiveScoresProvider, LiveResult } from "@/app/components/LiveScores";
 import backtest from "@/lib/model/backtest.json";
 
 export const dynamic = "force-dynamic";
@@ -166,6 +167,7 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
           {games.length === 0 ? (
             <p className="text-gray-500">No games for this week yet.</p>
           ) : (
+            <LiveScoresProvider weekId={selectedWeek.id}>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
@@ -248,6 +250,7 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
                           </td>
                         )}
                         <td className="border border-gray-200 p-2">
+                          <LiveResult gameId={g.id} isFinal={isFinal} awayTeam={g.awayTeam} homeTeam={g.homeTeam}>
                           {isFinal ? (
                             <div>
                               <div className="text-xs text-gray-600">
@@ -265,6 +268,7 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
                           ) : (
                             <span className="text-xs text-gray-400">–</span>
                           )}
+                          </LiveResult>
                         </td>
                       </tr>
                     );
@@ -272,6 +276,7 @@ export default async function ModelPage({ searchParams }: PageProps<"/model">) {
                 </tbody>
               </table>
             </div>
+            </LiveScoresProvider>
           )}
 
           <section className="mt-10">

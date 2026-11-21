@@ -2,6 +2,7 @@ import { PICKERS } from "@/lib/pickers";
 import { formatRank, formatSpread } from "@/lib/format";
 import { networkLogoUrl } from "@/lib/cfbd";
 import PickButtons from "@/app/components/PickButtons";
+import { LiveResult } from "@/app/components/LiveScores";
 
 type GameWithPicks = {
   id: number;
@@ -71,6 +72,15 @@ export default function GameCard({ game, locked }: { game: GameWithPicks; locked
             <span>{game.broadcast}</span>
           </span>
         )}
+      </div>
+
+      <div className="mt-1 text-center text-xs">
+        <LiveResult
+          gameId={game.id}
+          isFinal={game.status === "final"}
+          awayTeam={game.awayTeam}
+          homeTeam={game.homeTeam}
+        />
       </div>
 
       {game.status === "final" && (
